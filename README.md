@@ -1,8 +1,6 @@
-# Harmony Hub Integration for Node-RED
-[![GitHub release](https://img.shields.io/github/release/Aietes/node-red-contrib-harmony.svg)](https://github.com/Aietes/node-red-contrib-harmony/releases/latest)
-[![npm](https://img.shields.io/npm/v/node-red-contrib-harmony/latest.svg)](https://www.npmjs.com/package/node-red-contrib-harmony)
-[![npm package](https://img.shields.io/npm/dm/node-red-contrib-harmony.svg)](https://www.npmjs.com/package/node-red-contrib-harmony)
-[![js-standard-style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com/)
+# Harmony Hub Websocket Integration for Node-RED
+
+**Workaround for firmware update 4.15.206**
 
 Control your devices connected to a Logitech&trade; Harmony Hub from [Node-RED](https://nodered.org).
 
@@ -22,7 +20,7 @@ In the terminal open the user data directory `˜/.node-red` and install the pack
 
 ```
 cd ˜/.node-red
-npm install node-red-contrib-harmony
+npm install node-red-contrib-harmony-websocket
 ```
 
 Then run or restart Node-RED
@@ -34,13 +32,13 @@ Open your Node-RED instance, typically under <http://localhost:1880>, and you sh
 
 ### Install via Node-RED
 
-You can install the extension simply in Node-RED in your browser, by default under <http://localhost:1880>. Click on the *Menu* button (sandwich icon) in the upper right corner. In the menu click **Manage palette**. In the side-panel that opens on the left click on the tab **Install**. In the search field enter *harmony*, in the result list a *node-red-contrib-harmony* card will appear. Click on the **install** button on this card, and you are done. You should now find the new nodes available in the palette in the group **harmony**.
+You can install the extension simply in Node-RED in your browser, by default under <http://localhost:1880>. Click on the *Menu* button (sandwich icon) in the upper right corner. In the menu click **Manage palette**. In the side-panel that opens on the left click on the tab **Install**. In the search field enter *harmony*, in the result list a *node-red-contrib-harmony-websocket* card will appear. Click on the **install** button on this card, and you are done. You should now find the new nodes available in the palette in the group **harmony**.
 
 ## Usage / Available nodes
 
-Three nodes are available in Node-RED: **H command**, **H activity**, and **H observe**, located in the group **harmony**.
+Three nodes are available in Node-RED: **HWS command**, **HWS activity**, and **HWS observe**, located in the group **harmony**.
 
-### H command
+### HWS command
 
 A node to send a **Command** to a Harmony Hub through Node-RED.
 
@@ -54,7 +52,7 @@ The **Repeat** field allows for the command to be repeated. The default is *1*, 
 
 The command configured in the node will be triggered by any input injected into the node, the output slot will return *msg.payload = true* if the command was sent successfully.
 
-### H activity
+### HWS activity
 
 A node to activate an **Activity** on a Harmony Hub through Node-RED
 
@@ -67,7 +65,7 @@ To switch off, select *PowerOff* from the **Activity** dropdown list, or enter *
 
 The command configured in the node will be triggered by any input injected into the node, the output slot will return *msg.payload = true* if the command was sent successfully.
 
-### H observe
+### HWS observe
 
 A node to observe an **Activity** being triggered on a Harmony Hub through Node-RED
 
@@ -96,6 +94,7 @@ The *activityId* is the ID of the current activity, the *activityStatus* represe
 
 * **Stefan Krüger** - *Initial work* - [Aietes](https://github.com/Aietes)
 * **Daniel Freese** - *Coding help* - [AirBorne04](https://github.com/AirBorne04)
+* **lopelex** - *Websocket implementation* - [lopelex](https://github.com/lopelex)
 
 ## License
 

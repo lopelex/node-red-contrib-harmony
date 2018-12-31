@@ -1,9 +1,12 @@
 <!-- Copyright (c) 2018 Stefan Krüger, see LICENSE for details.-->
-<!-- Begin H command -->
-<script type="text/x-red" data-template-name="H command">
+<!-- Begin HWS command -->
+<script type="text/x-red" data-template-name="HWS command">
     <div class="form-row">
         <label for="node-input-server"><i class="fa fa-server"></i> Hub</label>
         <input type="text" id="node-input-server">
+    </div>
+    <div class="form-row" style="text-align: right;">
+        <a id="node-input-config" class="editor-button"><i class="fa fa-refresh"></i></a>
     </div>
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tag"></i> Name</label>
@@ -11,33 +14,35 @@
     </div>
     <div class="form-row">
         <label for="node-input-activity"><i class="fa fa-television"></i> Activity</label>
-        <select id="node-input-activity" style="width: 60%;"></select>
-        <a id="node-input-scan" class="editor-button"><i class="fa fa-refresh"></i></a>
+        <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
+            <select id="node-input-activity" style="width: 100%;"></select>
+        </div>
     </div>
     <div class="form-row">
         <label for="node-input-command"><i class="fa fa-keyboard-o"></i> Command</label>
-        <select id="node-input-command" style="width: 60%;"></select>
-        <a id="node-input-commandscan" class="editor-button"><i class="fa fa-refresh"></i></a>
+        <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
+            <select id="node-input-command" style="width: 100%;"></select>
+        </div>
     </div>
     <div class="form-row">
         <label for="node-input-repeat"><i class="fa fa-repeat"></i> Repeat</label>
         <input type="text" id="node-input-repeat">
     </div>
 </script>
-<script type="text/x-red" data-help-name="H command">
+<script type="text/x-red" data-help-name="HWS command">
     <p>A node to send a <b>Command</b> to a Harmony Hub through Node-RED.</p>
     <p>
     A Harmony <i class="fa fa-server" /> <b>Hub</b> needs to be selected from the list or created by clicking on the edit button, which opens the configuration node. The
     <b>IP</b> addresses of available Harmony Hubs will be autodetected, or can be entered manually in the configuration node.
 	</p>
 	<p>
-    An <i class="fa fa-television" /> <b>Activity</b> or <i class="fa fa-television" /> <b>Device</b> that is set up on the Harmony Hub needs to be selected. 
-    The dropdown loads available activities and devices automatically, 
+    An <i class="fa fa-television" /> <b>Activity</b> or <i class="fa fa-television" /> <b>Device</b> that is set up on the Harmony Hub needs to be selected.
+    The dropdown loads available activities and devices automatically,
     if needed the list can be refreshed by clicking on the <i class="fa fa-refresh" /> button next to the dropdown.
     Selecting an activity or device changes the available commands below, therefore you'll need to reselect a command below.
 	</p>
 	<p>
-    A <i class="fa fa-keyboard-o"/> <b>Command</b> needs to be selected. The dropdown loads available commands 
+    A <i class="fa fa-keyboard-o"/> <b>Command</b> needs to be selected. The dropdown loads available commands
     for the selected activity or device automatically, if needed the list can be refreshed by clicking on the <i class="fa fa-refresh" /> button next to the dropdown.
 	</p>
     <p>
@@ -46,77 +51,103 @@
     for volume or channels.
     </p>
     <p>
-    The command configured in the node will be triggered by any input injected into the node, the output slot will return <i>msg.payload = true</i>
+    The command configured in the node will be triggered by any input injected into the node or input json like <b>{"device":"Sony DVD Player","command":"0","repeat":2}</b> or <b>{"activity":"Chromecast","command":"Mute"}</b>, the output slot will return <i>msg.payload = actionString</i>
     if the command was sent successfully.
 	</p>
 </script>
 
 <script type="text/javascript">
-    RED.nodes.registerType('H command',{
+    RED.nodes.registerType('HWS command', {
         category: 'harmony',
         color: '#a6bbcf',
         defaults: {
-            name: {value:""},
-            server: {type:"harmony-server", required:true},
-            activity: {value:""},
-            harmony_type: {value:""},
-            label: {value:""},
-            command: {value:""},
-            repeat: {value:"1", validate:function(v) { return v > 0 } }
+            name: {
+                value: ""
+            },
+            server: {
+                type: "harmonyws-server",
+                required: true
+            },
+            activity: {
+                value: ""
+            },
+            harmony_type: {
+                value: ""
+            },
+            label: {
+                value: ""
+            },
+            command: {
+                value: ""
+            },
+            repeat: {
+                value: "1",
+                validate: function(v) {
+                    return v > 0
+                }
+            }
         },
-        inputs:1,
-        outputs:1,
+        inputs: 1,
+        outputs: 1,
         icon: "feed.png",
         label: function() {
-            return this.name||"H command";
+            return this.name || "HWS command";
         },
         oneditprepare: function() {
 
+            var node = this;
             var config = RED.nodes.node($('#node-input-server').val())
 
+            $('#node-input-activity').attr("disabled", "disabled")
+            $('#node-input-command').attr("disabled", "disabled")
+
+
             loadActivities(this.activity)
-            loadCommands(this.activity,this.command,this.harmony_type)
-
-            $('#node-input-scan').click( function() {
-                loadActivities($('#node-input-activity').val())
-            })
-
-            $('#node-input-commandscan').click( function() {
-                loadCommands($('#node-input-activity').val(),$('#node-input-command').val(),$('select#node-input-activity option:selected').attr('harmonyType'))
-            })
+            loadCommands(this.activity, this.command, this.harmony_type)
 
             $('#node-input-activity').on('change', function() {
-                loadCommands(this.value,null,$('select#node-input-activity option:selected').attr('harmonyType'))
-            })
-            $('#node-input-server').on('change', function() {
-                config = RED.nodes.node(this.value)
-                loadActivities(this.activity)
+                loadCommands(this.value, null, $('select#node-input-activity option:selected').attr('harmonyType'))
             })
 
-            function loadActivities(selected_act){
-                if (config && config.ip) {
+            $('#node-input-server').on('change', function() {
+                config = RED.nodes.node(this.value)
+                loadActivities(node.activity)
+            })
+
+            $('#node-input-config').click(function() {
+                loadConfig()
+            })
+
+            function loadActivities(selected_act) {
+                if (config && config.id && config.ip) {
                     $('#node-input-activity').attr("disabled", "disabled")
                     $('#node-input-activity').append("<option value='' selected>Loading activities...</option>")
 
-                    $.when( $.get('harmony/activities', { ip: config.ip } ),  $.get('harmony/devices', { ip: config.ip } ) )
-                        .done(function( a1, a2 ) {
+                    $.when($.get('harmonyws/activities', {
+                            id: config.id,
+                            ip: config.ip
+                        }), $.get('harmonyws/devices', {
+                            id: config.id,
+                            ip: config.ip
+                        }))
+                        .done(function(a1, a2) {
                             // a1 and a2 are arguments resolved for the page1 and page2 ajax requests, respectively.
                             // Each argument is an array with the following structure: [ data, statusText, jqXHR ]
-                            var acts = JSON.parse( a1[0] )
+                            var acts = JSON.parse(a1[0])
                             $('#node-input-activity').empty()
-                            if(!acts || acts.length <= 0) {
+                            if (!acts || acts.length <= 0) {
                                 //$('#node-input-activity').append("<option value='' selected>No activities</option>")
                                 RED.notify("No activities found.", "error")
                             } else {
-                                acts.forEach(function(act){
-                                    if(act.id > 0) $('#node-input-activity').append('<option harmonyType="act" value="' + act.id + '">' + act.label + '</option>')
+                                acts.forEach(function(act) {
+                                    if (act.id > 0) $('#node-input-activity').append('<option harmonyType="act" value="' + act.id + '">' + act.label + '</option>')
                                 })
                             }
-                            var devices = JSON.parse( a2[0] )
-                            if(!devices || devices.length <= 0) {
+                            var devices = JSON.parse(a2[0])
+                            if (!devices || devices.length <= 0) {
                                 RED.notify("No devices found.", "error")
                             } else {
-                                devices.forEach(function(device){
+                                devices.forEach(function(device) {
                                     $('#node-input-activity').append('<option harmonyType="dev" value="' + encodeURI(device.id) + '">' + device.label + '</option>')
                                 })
                             }
@@ -126,46 +157,56 @@
                         .fail(function(err) {
                             RED.notify(err.responseText, "error")
                         })
-                }          
+                }
             }
 
-            function loadCommands(act_id,selected_comm,harmony_type){
-                if (config && config.ip && act_id) {
+            function loadCommands(act_id, selected_comm, harmony_type) {
+                if (config && config.id && config.ip && act_id) {
                     $('#node-input-command').attr("disabled", "disabled")
                     $('#node-input-command').append("<option value='' selected>Loading commands...</option>")
-                    if(harmony_type == "act"){
-                        $.get('harmony/commands', { ip: config.ip, activity: act_id } )
+                    if (harmony_type == "act") {
+                        $.get('harmonyws/commands', {
+                                id: config.id,
+                                ip: config.ip,
+                                activity: act_id
+                            })
                             .done(function(data) {
                                 var comms = JSON.parse(data);
                                 $('#node-input-command').empty()
-                                if(!comms || comms.length <= 0) {
+                                if (!comms || comms.length <= 0) {
                                     $('#node-input-command').append("<option value='' selected>No commands</option>")
                                     RED.notify("No commands found.", "error")
                                 } else {
-                                    comms.forEach(function(comm){
-                                        $('#node-input-command').append('<option value="' + encodeURI(comm.action.replace(/\:/g, '::')) + '">' + comm.label + '</option>')
+                                    comms.forEach(function(comm) {
+                                        var action = encodeURI(JSON.stringify(comm.action))
+                                        $('#node-input-command').append('<option value="' + action + '">' + comm.label + '</option>')
                                     })
-                                    if( selected_comm != null ){
+                                    if (selected_comm != null) {
                                         $('#node-input-command').val(selected_comm)
                                     }
-                                    $('#node-input-command').removeAttr("disabled")  
+                                    $('#node-input-command').removeAttr("disabled")
                                 }
                             }).fail(function(err) {
                                 RED.notify(err.responseText, "error");
                             })
                     } else {
-                        $.get('harmony/device-commands', { ip: config.ip, deviceId: act_id } )
+                        $.get('harmonyws/device-commands', {
+                                id: config.id,
+                                ip: config.ip,
+                                device: act_id
+                            })
                             .done(function(data) {
                                 var comms = JSON.parse(data);
                                 $('#node-input-command').empty()
-                                if(!comms || comms.length <= 0) {
+                                if (!comms || comms.length <= 0) {
                                     $('#node-input-command').append("<option value='' selected>No commands</option>")
                                     RED.notify("No commands found.", "error")
                                 } else {
                                     comms.forEach(function(comm) {
-                                        $('#node-input-command').append('<option value="' + encodeURI(comm.action.replace(/\:/g, '::')) + '">' + comm.label + '</option>')
+                                        var action = encodeURI(JSON.stringify(comm.action))
+                                        $('#node-input-command').append('<option value="' + action + '">' + comm.label + '</option>')
                                     });
-                                    if( selected_comm != null ){
+                                    if (selected_comm != null) {
                                         $('#node-input-command').val(selected_comm)
                                     }
                                     $('#node-input-command').removeAttr("disabled")
@@ -174,6 +215,32 @@
                                 RED.notify(err.responseText, "error");
                             });
                     }
+                }
+            }
+
+            function loadConfig() {
+                if (config && config.id && config.ip) {
+
+                    var act = $('#node-input-activity').val();
+                    var cmd = $('#node-input-command').val()
+                    var type = $('select#node-input-activity option:selected').attr('harmonyType')
+
+                    $('#node-input-activity').attr("disabled", "disabled")
+                    $('#node-input-activity').append("<option value='' selected>Loading activities...</option>")
+                    $('#node-input-command').attr("disabled", "disabled")
+                    $('#node-input-command').append("<option value='' selected>Loading commands...</option>")
+
+                    $.get('harmonyws/config', {
+                            id: config.id,
+                            ip: config.ip
+                        })
+                        .done(function() {
+                            loadActivities(act)
+                            loadCommands(act, cmd,type);
+                        })
+                        .fail(function(err) {
+                            RED.notify(err.responseText, "error")
+                        })
                 }
             }
         },
@@ -185,13 +252,16 @@
         }
     });
 </script>
-<!-- End H command -->
+<!-- End HWS command -->
 
-<!-- Begin H activity -->
-<script type="text/x-red" data-template-name="H activity">
+<!-- Begin HWS activity -->
+<script type="text/x-red" data-template-name="HWS activity">
     <div class="form-row">
         <label for="node-input-server"><i class="fa fa-server"></i> Hub</label>
         <input type="text" id="node-input-server">
+    </div>
+    <div class="form-row" style="text-align: right;">
+        <a id="node-input-config" class="editor-button"><i class="fa fa-refresh"></i></a>
     </div>
     <div class="form-row">
         <label for="node-input-name"><i class="icon-tag"></i> Name</label>
@@ -199,19 +269,20 @@
     </div>
     <div class="form-row">
         <label for="node-input-activity"><i class="fa fa-television"></i> Activity</label>
-        <select id="node-input-activity" style="width: 60%;"></select>
-        <a id="node-input-scan" class="editor-button"><i class="fa fa-refresh"></i></a>
+        <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
+            <select id="node-input-activity" style="width: 100%;"></select>
+        </div>
     </div>
 </script>
-<script type="text/x-red" data-help-name="H activity">
+<script type="text/x-red" data-help-name="HWS activity">
     <p>A node to start an <b>Activity</b> on a Harmony Hub through Node-RED.</p>
     <p>
     A Harmony <i class="fa fa-server" /> <b>Hub</b> needs to be selected from the list or created by clicking on the edit button, which opens the configuration node. The
     <b>IP</b> addresses of available Harmony Hubs will be autodetected, or can be entered manually in the configuration node.
 	</p>
 	<p>
-    An <i class="fa fa-television" /> <b>Activity</b> that is set up on the Harmony Hub needs to be selected. 
-    The dropdown loads available activities automatically, 
+    An <i class="fa fa-television" /> <b>Activity</b> that is set up on the Harmony Hub needs to be selected.
+    The dropdown loads available activities automatically,
     if needed the list can be refreshed by clicking on the <i class="fa fa-refresh" /> button next to the dropdown.
 	</p>
     <p>
@@ -224,55 +295,92 @@
 </script>
 
 <script type="text/javascript">
-    RED.nodes.registerType('H activity',{
+    RED.nodes.registerType('HWS activity', {
         category: 'harmony',
         color: '#a6bbcf',
         defaults: {
-            name: {value:""},
-            server: {type:"harmony-server", required:true},
-            activity: {value:""},
-            label: {value:""},
+            name: {
+                value: ""
+            },
+            server: {
+                type: "harmonyws-server",
+                required: true
+            },
+            activity: {
+                value: ""
+            },
+            label: {
+                value: ""
+            },
         },
-        inputs:1,
-        outputs:1,
+        inputs: 1,
+        outputs: 1,
         icon: "feed.png",
         label: function() {
-            return this.name||"H activity";
+            return this.name || "HWS activity";
         },
         oneditprepare: function() {
 
+            var node = this;
             var config = RED.nodes.node($('#node-input-server').val())
 
             loadActivities(this.activity)
 
-            $('#node-input-scan').click( function() {
-                loadActivities($('#node-input-activity').val())
+            $('#node-input-server').on('change', function() {
+                config = RED.nodes.node(this.value)
+                loadActivities(node.activity)
             })
 
-            function loadActivities(selected_act){
-                if (config && config.ip) {
+            $('#node-input-config').click(function() {
+                loadConfig()
+            })
+
+            function loadActivities(selected_act) {
+                if (config && config.id && config.ip) {
                     $('#node-input-activity').attr("disabled", "disabled")
                     $('#node-input-activity').append("<option value='' selected>Loading activities...</option>")
-                    
-                    $.get('harmony/activities', { ip: config.ip } )
+
+                    $.get('harmonyws/activities', {
+                            id: config.id,
+                            ip: config.ip
+                        })
                         .done(function(data) {
                             var acts = JSON.parse(data);
                             $('#node-input-activity').empty()
-                            if(!acts || acts.length <= 0) {
+                            if (!acts || acts.length <= 0) {
                                 //$('#node-input-activity').append("<option value='' selected>No activities</option>")
                                 RED.notify("No activities found.", "error")
                             } else {
-                                acts.forEach(function(act){
+                                acts.forEach(function(act) {
                                     $('#node-input-activity').append('<option harmonyType="act" value="' + act.id + '">' + act.label + '</option>')
                                 })
                                 $('#node-input-activity').removeAttr("disabled")
-                                $('#node-input-activity').val(selected_act) 
+                                $('#node-input-activity').val(selected_act)
                             }
                         })
                         .fail(function(err) {
                             RED.notify(err.responseText, "error")
                         })
-                }          
+                }
+            }
+
+            function loadConfig() {
+                if (config && config.id && config.ip) {
+                    var act = $('#node-input-activity').val();
+                    $('#node-input-activity').attr("disabled", "disabled")
+                    $('#node-input-activity').append("<option value='' selected>Loading activities...</option>")
+
+                    $.get('harmonyws/config', {
+                            id: config.id,
+                            ip: config.ip
+                        })
+                        .done(function() {
+                            loadActivities(act)
+                        })
+                        .fail(function(err) {
+                            RED.notify(err.responseText, "error")
+                        })
+                }
             }
 
         },
@@ -282,10 +390,10 @@
         }
     });
 </script>
-<!-- End H activtiy -->
+<!-- End HWS activtiy -->
 
-<!-- Begin H observe -->
-<script type="text/x-red" data-template-name="H observe">
+<!-- Begin HWS observe -->
+<script type="text/x-red" data-template-name="HWS observe">
     <div class="form-row">
         <label for="node-input-server"><i class="fa fa-server"></i> Hub</label>
         <input type="text" id="node-input-server">
@@ -295,7 +403,7 @@
         <input type="text" id="node-input-name" placeholder="Name">
     </div>
 </script>
-<script type="text/x-red" data-help-name="H observe">
+<script type="text/x-red" data-help-name="HWS observe">
     <p>A node to observe changes of activities for a given Harmony Hub through Node-RED</p>
     <p>
     A Harmony <i class="fa fa-server" /> <b>Hub</b> needs to be selected from the list or created by clicking on the edit button, which opens the configuration node. The
@@ -309,19 +417,24 @@
 </script>
 
 <script type="text/javascript">
-    RED.nodes.registerType('H observe',{
+    RED.nodes.registerType('HWS observe', {
         category: 'harmony',
         color: '#a6bbcf',
         defaults: {
-            name: {value:""},
-            server: {type:"harmony-server", required:true},
+            name: {
+                value: ""
+            },
+            server: {
+                type: "harmonyws-server",
+                required: true
+            },
         },
-        inputs:0,
-        outputs:1,
+        inputs: 0,
+        outputs: 1,
         icon: "feed.png",
         label: function() {
-            return this.name||"H observe";
+            return this.name || "HWS observe";
         }
     });
 </script>
-<!-- End H observe -->
+<!-- End HWS observe -->
