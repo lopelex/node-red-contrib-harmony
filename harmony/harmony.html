@@ -1,4 +1,7 @@
 <!-- Copyright (c) 2018 Stefan Krüger, see LICENSE for details.-->
+
+
+
 <!-- Begin HWS command -->
 <script type="text/x-red" data-template-name="HWS command">
     <div class="form-row">
@@ -28,6 +31,11 @@
         <label for="node-input-repeat"><i class="fa fa-repeat"></i> Repeat</label>
         <input type="text" id="node-input-repeat">
     </div>
+    <div class="form-row">
+        <label for="node-input-delay"><i class="fa fa-hourglass-start"></i> Delay</label>
+        <input type="text" id="node-input-delay">
+    </div>
+</div>
 </script>
 <script type="text/x-red" data-help-name="HWS command">
     <p>A node to send a <b>Command</b> to a Harmony Hub through Node-RED.</p>
@@ -51,7 +59,7 @@
     for volume or channels.
     </p>
     <p>
-    The command configured in the node will be triggered by any input injected into the node or input json like <b>{"device":"Sony DVD Player","command":"0","repeat":2}</b> or <b>{"activity":"Chromecast","command":"Mute"}</b>, the output slot will return <i>msg.payload = actionString</i>
+    The command configured in the node will be triggered by any input injected into the node or input like <b>msg.paylod = {"command": "Mute"}</b> or <b>msg.command = "Mute"</b>, the output slot will return <i>msg.payload = actionString</i>
     if the command was sent successfully.
 	</p>
 </script>
@@ -62,197 +70,160 @@
         color: '#a6bbcf',
         defaults: {
             name: {
-                value: ""
+                value: ''
             },
             server: {
-                type: "harmonyws-server",
+                type: 'harmonyws-server',
                 required: true
             },
             activity: {
-                value: ""
-            },
-            harmony_type: {
-                value: ""
-            },
-            label: {
-                value: ""
+                value: ''
             },
             command: {
-                value: ""
+                value: ''
             },
             repeat: {
-                value: "1",
-                validate: function(v) {
-                    return v > 0
+                value: '1',
+                validate: function(value) {
+                    return value > 0;
+                }
+            },
+            delay: {
+                value: '50',
+                validate: function(value) {
+                    return value > 10;
                 }
             }
         },
         inputs: 1,
         outputs: 1,
-        icon: "feed.png",
+        icon: 'feed.png',
         label: function() {
-            return this.name || "HWS command";
+            return this.name || 'HWS command';
         },
         oneditprepare: function() {
 
             var node = this;
-            var config = RED.nodes.node($('#node-input-server').val())
+            var server = $('#node-input-server').val();
+            var config = RED.nodes.node(server);
 
-            $('#node-input-activity').attr("disabled", "disabled")
-            $('#node-input-command').attr("disabled", "disabled")
-
-
-            loadActivities(this.activity)
-            loadCommands(this.activity, this.command, this.harmony_type)
-
-            $('#node-input-activity').on('change', function() {
-                loadCommands(this.value, null, $('select#node-input-activity option:selected').attr('harmonyType'))
-            })
+            loadActivitiesAndDevices(node.activity);
 
             $('#node-input-server').on('change', function() {
-                config = RED.nodes.node(this.value)
-                loadActivities(node.activity)
-            })
+                config = RED.nodes.node(this.value);
+                loadActivitiesAndDevices(node.activity);
+            });
+
+            $('#node-input-activity').on('change', function() {
+                loadCommands(this.value, node.command);
+            });
 
             $('#node-input-config').click(function() {
-                loadConfig()
-            })
+                $('#node-input-activity').empty();
+                $('#node-input-activity').attr('disabled', 'disabled')
+                $('#node-input-command').empty();
+                $('#node-input-command').attr('disabled', 'disabled')
+                $.get('harmonyws/config', {
+                        ip: config.ip
+                    })
+                    .done(function(data) {
+                        loadActivitiesAndDevices(node.activity);
+                    })
+                    .fail(function(err) {
+                        RED.notify(err.responseText, 'error')
+                    });
+            });
 
-            function loadActivities(selected_act) {
-                if (config && config.id && config.ip) {
-                    $('#node-input-activity').attr("disabled", "disabled")
-                    $('#node-input-activity').append("<option value='' selected>Loading activities...</option>")
+            function loadActivitiesAndDevices(selected) {
 
-                    $.when($.get('harmonyws/activities', {
-                            id: config.id,
+                if (config && config.ip) {
+                    $('#node-input-activity').attr('disabled', 'disabled')
+                    $('#node-input-activity').append('<option value="" selected>Loading...</option>');
+
+                    var sucsess = false;
+                    node.data = [];
+
+                    $.get('harmonyws/activitiesAndDevices', {
                             ip: config.ip
-                        }), $.get('harmonyws/devices', {
-                            id: config.id,
-                            ip: config.ip
-                        }))
-                        .done(function(a1, a2) {
-                            // a1 and a2 are arguments resolved for the page1 and page2 ajax requests, respectively.
-                            // Each argument is an array with the following structure: [ data, statusText, jqXHR ]
-                            var acts = JSON.parse(a1[0])
-                            $('#node-input-activity').empty()
+                        })
+                        .done(function(data) {
+
+                            $('#node-input-activity').empty();
+                            var acts = JSON.parse(data);
                             if (!acts || acts.length <= 0) {
-                                //$('#node-input-activity').append("<option value='' selected>No activities</option>")
-                                RED.notify("No activities found.", "error")
+                                $('#node-input-activity').append("<option value='' selected>No activities found.</option>");
+                                // RED.notify('No activities found.', 'error');
                             } else {
+                                node.data = JSON.parse(data);
                                 acts.forEach(function(act) {
-                                    if (act.id > 0) $('#node-input-activity').append('<option harmonyType="act" value="' + act.id + '">' + act.label + '</option>')
+                                    if (act.id > 0) {
+                                        $('#node-input-activity').append('<option harmonyType="act" value="' + act.id + '">' + act.label + ' (' + act.id + ')</option>');
+                                        sucsess = true;
+                                    }
                                 })
                             }
-                            var devices = JSON.parse(a2[0])
-                            if (!devices || devices.length <= 0) {
-                                RED.notify("No devices found.", "error")
-                            } else {
-                                devices.forEach(function(device) {
-                                    $('#node-input-activity').append('<option harmonyType="dev" value="' + encodeURI(device.id) + '">' + device.label + '</option>')
-                                })
+                            if (sucsess) {
+                                $('#node-input-activity').removeAttr('disabled');
+                                $('#node-input-activity').val(selected);
+                                loadCommands(node.activity, node.command);
                             }
-                            $('#node-input-activity').removeAttr("disabled")
-                            $('#node-input-activity').val(selected_act)
                         })
                         .fail(function(err) {
-                            RED.notify(err.responseText, "error")
-                        })
+                            $('#node-input-activity').empty();
+                            $('#node-input-activity').attr('disabled', 'disabled');
+                            RED.notify(err.responseText, 'error')
+                        });
                 }
             }
 
-            function loadCommands(act_id, selected_comm, harmony_type) {
-                if (config && config.id && config.ip && act_id) {
-                    $('#node-input-command').attr("disabled", "disabled")
+            function loadCommands(id, selected) {
+
+                if (node.data && id) {
+
+                    $('#node-input-command').attr('disabled', 'disabled')
                     $('#node-input-command').append("<option value='' selected>Loading commands...</option>")
-                    if (harmony_type == "act") {
-                        $.get('harmonyws/commands', {
-                                id: config.id,
-                                ip: config.ip,
-                                activity: act_id
-                            })
-                            .done(function(data) {
-                                var comms = JSON.parse(data);
-                                $('#node-input-command').empty()
-                                if (!comms || comms.length <= 0) {
-                                    $('#node-input-command').append("<option value='' selected>No commands</option>")
-                                    RED.notify("No commands found.", "error")
-                                } else {
-                                    comms.forEach(function(comm) {
-                                        var action = encodeURI(JSON.stringify(comm.action))
-                                        $('#node-input-command').append('<option value="' + action + '">' + comm.label + '</option>')
-                                    })
-                                    if (selected_comm != null) {
-                                        $('#node-input-command').val(selected_comm)
-                                    }
-                                    $('#node-input-command').removeAttr("disabled")
-                                }
-                            }).fail(function(err) {
-                                RED.notify(err.responseText, "error");
-                            })
-                    } else {
-                        $.get('harmonyws/device-commands', {
-                                id: config.id,
-                                ip: config.ip,
-                                device: act_id
-                            })
-                            .done(function(data) {
-                                var comms = JSON.parse(data);
-                                $('#node-input-command').empty()
-                                if (!comms || comms.length <= 0) {
-                                    $('#node-input-command').append("<option value='' selected>No commands</option>")
-                                    RED.notify("No commands found.", "error")
-                                } else {
-                                    comms.forEach(function(comm) {
-                                        var action = encodeURI(JSON.stringify(comm.action))
-                                        $('#node-input-command').append('<option value="' + action + '">' + comm.label + '</option>')
-                                    });
-                                    if (selected_comm != null) {
-                                        $('#node-input-command').val(selected_comm)
-                                    }
-                                    $('#node-input-command').removeAttr("disabled")
-                                }
-                            }).fail(function(err) {
-                                RED.notify(err.responseText, "error");
+
+                    var sucsess = false;
+
+                    try {
+                        var act = $.grep(node.data, function(obj) {
+                            return obj.id === id;
+                        }).pop();
+
+                        $('#node-input-command').empty();
+                        if (!act.commands || act.commands.length <= 0) {
+                            $('#node-input-command').append("<option value='' selected>No commands found.</option>");
+                            // RED.notify('No commands found.', 'error');
+                        } else {
+                            act.commands.forEach(function(cmd) {
+
+                                var cmdAction = JSON.parse(cmd.action);
+                                var action = encodeURI(act.type + ':' + cmdAction.deviceId + ':' + cmdAction.command);
+                                $('#node-input-command').append('<option value="' + action + '">' + cmd.label + '</option>');
+                                sucsess = true;
                             });
+                        }
+                        if (sucsess) {
+                            $('#node-input-command').removeAttr('disabled');
+                            $('#node-input-command').val(selected);
+                        }
+                    } catch (err) {
+                        $('#node-input-command').empty();
+                        $('#node-input-command').attr('disabled', 'disabled');
+                        RED.notify(err.responseText, 'error')
                     }
-                }
-            }
-
-            function loadConfig() {
-                if (config && config.id && config.ip) {
-
-                    var act = $('#node-input-activity').val();
-                    var cmd = $('#node-input-command').val()
-                    var type = $('select#node-input-activity option:selected').attr('harmonyType')
-
-                    $('#node-input-activity').attr("disabled", "disabled")
-                    $('#node-input-activity').append("<option value='' selected>Loading activities...</option>")
-                    $('#node-input-command').attr("disabled", "disabled")
-                    $('#node-input-command').append("<option value='' selected>Loading commands...</option>")
-
-                    $.get('harmonyws/config', {
-                            id: config.id,
-                            ip: config.ip
-                        })
-                        .done(function() {
-                            loadActivities(act)
-                            loadCommands(act, cmd,type);
-                        })
-                        .fail(function(err) {
-                            RED.notify(err.responseText, "error")
-                        })
                 }
             }
         },
         oneditsave: function() {
             this.activity = $('#node-input-activity').val();
-            this.label = $('select#node-input-activity option:selected').text();
-            this.harmony_type = $('select#node-input-activity option:selected').attr('harmonyType')
             this.command = $('#node-input-command').val();
         }
     });
 </script>
 <!-- End HWS command -->
+
+
 
 <!-- Begin HWS activity -->
 <script type="text/x-red" data-template-name="HWS activity">
@@ -289,108 +260,106 @@
     To switch off, select <i>PowerOff</i> from the <b>Activity</b> dropdown list.
     </p>
 	<p>
-    The command configured in the node will be triggered by any input injected into the node, the output slot will return <i>msg.payload = true</i>
+    The command configured in the node will be triggered by any input injected into the node or input like <b>msg.paylod = {"activity": "32724912"}</b> or <b>msg.activity = "32724912"</b>, the output slot will return <i>msg.payload = {activity: activityId}</i>
     if the command was sent successfully.
 	</p>
 </script>
 
 <script type="text/javascript">
     RED.nodes.registerType('HWS activity', {
+
         category: 'harmony',
         color: '#a6bbcf',
         defaults: {
             name: {
-                value: ""
+                value: ''
             },
             server: {
-                type: "harmonyws-server",
+                type: 'harmonyws-server',
                 required: true
             },
             activity: {
-                value: ""
-            },
-            label: {
-                value: ""
-            },
+                value: ''
+            }
         },
         inputs: 1,
         outputs: 1,
-        icon: "feed.png",
+        icon: 'feed.png',
         label: function() {
-            return this.name || "HWS activity";
+            return this.name || 'HWS activity';
         },
         oneditprepare: function() {
 
             var node = this;
-            var config = RED.nodes.node($('#node-input-server').val())
+            var server = $('#node-input-server').val();
+            var config = RED.nodes.node(server);
 
-            loadActivities(this.activity)
+            loadActivities(node.activity);
 
             $('#node-input-server').on('change', function() {
                 config = RED.nodes.node(this.value)
-                loadActivities(node.activity)
-            })
+                loadActivities(node.activity);
+            });
 
             $('#node-input-config').click(function() {
-                loadConfig()
-            })
+                $('#node-input-activity').empty();
+                $('#node-input-activity').attr('disabled', 'disabled')
+                $.get('harmonyws/config', {
+                        ip: config.ip
+                    })
+                    .done(function(data) {
+                        loadActivities(node.activity);
+                    })
+                    .fail(function(err) {
+                        RED.notify(err.responseText, 'error')
+                    });
+            });
 
-            function loadActivities(selected_act) {
-                if (config && config.id && config.ip) {
-                    $('#node-input-activity').attr("disabled", "disabled")
-                    $('#node-input-activity').append("<option value='' selected>Loading activities...</option>")
+            function loadActivities(selectedActivity) {
+
+                if (config && config.ip) {
+                    $('#node-input-activity').attr('disabled', 'disabled')
+                    $('#node-input-activity').append('<option value="" selected>Loading activities...</option>');
+
+                    var sucsess = false;
 
                     $.get('harmonyws/activities', {
-                            id: config.id,
                             ip: config.ip
                         })
                         .done(function(data) {
+                            $('#node-input-activity').empty();
+
                             var acts = JSON.parse(data);
-                            $('#node-input-activity').empty()
                             if (!acts || acts.length <= 0) {
-                                //$('#node-input-activity').append("<option value='' selected>No activities</option>")
-                                RED.notify("No activities found.", "error")
+                                $('#node-input-activity').append("<option value='' selected>No activities found.</option>");
+                                // RED.notify('No activities found.', 'error');
                             } else {
                                 acts.forEach(function(act) {
-                                    $('#node-input-activity').append('<option harmonyType="act" value="' + act.id + '">' + act.label + '</option>')
-                                })
-                                $('#node-input-activity').removeAttr("disabled")
-                                $('#node-input-activity').val(selected_act)
+                                    $('#node-input-activity').append('<option value="' + act.id + '">' + act.label + ' (' + act.id + ')</option>')
+                                    sucsess = true;
+                                });
+                            }
+                            if (sucsess) {
+                                $('#node-input-activity').removeAttr('disabled');
+                                $('#node-input-activity').val(selectedActivity);
                             }
                         })
                         .fail(function(err) {
-                            RED.notify(err.responseText, "error")
-                        })
+                            $('#node-input-activity').empty();
+                            $('#node-input-activity').attr('disabled', 'disabled')
+                            RED.notify(err.responseText, 'error')
+                        });
                 }
             }
-
-            function loadConfig() {
-                if (config && config.id && config.ip) {
-                    var act = $('#node-input-activity').val();
-                    $('#node-input-activity').attr("disabled", "disabled")
-                    $('#node-input-activity').append("<option value='' selected>Loading activities...</option>")
-
-                    $.get('harmonyws/config', {
-                            id: config.id,
-                            ip: config.ip
-                        })
-                        .done(function() {
-                            loadActivities(act)
-                        })
-                        .fail(function(err) {
-                            RED.notify(err.responseText, "error")
-                        })
-                }
-            }
-
         },
         oneditsave: function() {
             this.activity = $('#node-input-activity').val();
-            this.label = $('select#node-input-activity option:selected').text();
         }
     });
 </script>
 <!-- End HWS activtiy -->
+
+
 
 <!-- Begin HWS observe -->
 <script type="text/x-red" data-template-name="HWS observe">
@@ -411,8 +380,8 @@
 	</p>
     <p>
     When an <b>Activity</b> is switched on the Harmony Hub, the node sends an object with a payload to the output:
-    payload: { activityId: activityId, activityStatus: activityStatus }  The <i>activityId</i> is the ID of the current activity,
-    the <i>activityStatus</i> represents the following states: 0 - is off, 1 - Activity is starting, 2 - Activity is started, 3 - Hub is turning off
+    payload: { activity: activityId, status: activityStatus }  The <i>activityId</i> is the ID of the current activity,
+    the <i>activityStatus</i> represents the following states: 0 - is off, 1 - Activity is starting, 2 - Activity is started, 3 - Hub is turning off, 4 - Cached Activity
     </p>
 </script>
 
@@ -422,18 +391,18 @@
         color: '#a6bbcf',
         defaults: {
             name: {
-                value: ""
+                value: ''
             },
             server: {
-                type: "harmonyws-server",
+                type: 'harmonyws-server',
                 required: true
-            },
+            }
         },
-        inputs: 0,
+        inputs: 1,
         outputs: 1,
-        icon: "feed.png",
+        icon: 'feed.png',
         label: function() {
-            return this.name || "HWS observe";
+            return this.name || 'HWS observe';
         }
     });
 </script>

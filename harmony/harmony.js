@@ -1,85 +1,33 @@
 module.exports = function(RED) {
 
-    function getDeviceCommands(server, deviceLabel, commandLabel) {
-
-        var config = server.cache.get('config');
-        if (!config) return false;
-
-        var device = config.data.device
-            .filter(dev => {
-                return dev.label === deviceLabel;
-            })
-            .pop();
-        if (!device) return false;
-        return device.controlGroup
-            .map(group => {
-                return group.function;
-            })
-            .reduce((prev, curr) => {
-                return prev.concat(curr);
-            })
-            .filter(cmd => {
-                return cmd.label === commandLabel;
-            })
-            .map(cmd => {
-                return cmd.action;
-            })[0];
-    }
-
-    function getActivityCommands(server, activityLabel, commandLabel) {
-
-        var config = server.cache.get('config');
-        if (!config) return false;
-
-        var activity = config.data.activity
-            .filter(act => {
-                return act.label === activityLabel;
-            })
-            .pop();
-        if (!activity) return false;
-        return activity.controlGroup
-            .map(group => {
-                return group.function;
-            })
-            .reduce((prev, curr) => {
-                return prev.concat(curr);
-            })
-            .filter(cmd => {
-                return cmd.label === commandLabel;
-            })
-            .map(cmd => {
-                return cmd.action;
-            })[0];
-    }
-
-    function HarmonySendCommand(n) {
-        RED.nodes.createNode(this, n);
+    function HarmonySendCommand(config) {
+        RED.nodes.createNode(this, config);
         var node = this;
 
-        node.server = RED.nodes.getNode(n.server);
-        node.activity = n.activity;
-        node.label = n.label;
-        node.command = n.command;
-        node.harmony_type = n.harmony_type;
-        node.repeat = Number.parseInt(n.repeat) || 1;
+        node.server = RED.nodes.getNode(config.server);
+        node.activity = config.activity;
+        node.label = config.label;
+        node.command = config.command;
+        node.harmonyType = config.harmonyType;
+        node.delay = Number.parseInt(config.delay) || 50;
+        node.repeat = Number.parseInt(config.repeat) || 1;
 
         if (!node.server) return;
 
         node.on('input', msg => {
 
-            var action = decodeURI(node.command);
-
             try {
-                if (msg.payload.command) {
 
-                    if (msg.payload.device) {
-                        action = getDeviceCommands(node.server, msg.payload.device, msg.payload.command);
-                    }
-                    if (msg.payload.activity) {
-                        action = getActivityCommands(node.server, msg.payload.activity, msg.payload.command);
-                    }
-                    node.repeat = Number.parseInt(msg.payload.repeat) || 1;
+                var [type, id, command] = decodeURI(node.command).split(':');
+
+                if (msg.payload.command) {
+                    command = msg.payload.command;
+                } else if (msg.command) {
+                    command = msg.command;
                 }
+
+                var action = node.server.hub.getAction(id || node.activity, command);
+
             } catch (err) {
                 console.log('Error: ' + err);
             }
@@ -89,43 +37,56 @@ module.exports = function(RED) {
                     payload: false
                 });
             } else {
-                for (var i = 0; i < node.repeat; i++) {
-                    node.server.harmony.sendCommands(action, 50)
-                        .catch(err => {
-                            node.send({
-                                payload: false
-                            });
-                            if (err) throw err;
+                node.server.hub.sendCommand(action, node.delay, node.repeat)
+                    .then(() => {
+                        node.send({
+                            payload: action
                         });
-                }
-                node.send({
-                    payload: action
-                });
+                    })
+                    .catch(err => {
+                        node.send({
+                            payload: false
+                        });
+                        console.log('Error: ' + err);
+                    });
             }
         });
     }
     RED.nodes.registerType('HWS command', HarmonySendCommand)
 
-    function HarmonyActivity(n) {
-        RED.nodes.createNode(this, n);
-        var node = this;
 
-        node.server = RED.nodes.getNode(n.server);
-        node.activity = n.activity;
-        node.label = n.label;
+
+    function HarmonyActivity(config) {
+        var node = this;
+        RED.nodes.createNode(this, config);
+
+        node.server = RED.nodes.getNode(config.server);
+        node.activity = config.activity;
 
         if (!node.server) return;
 
         node.on('input', msg => {
-            try {
-                msg.payload = JSON.parse(msg.payload);
-            } catch (err) {
-                console.log('Error: ' + err);
+
+            var id;
+
+            if (msg.payload.activity) {
+                id = msg.payload.activity;
+            } else if (msg.activity) {
+                id = msg.activity;
             }
-            node.server.harmony.startActivity(node.activity)
-                .then(response => {
+            if (!id) {
+                id = node.activity;
+            }
+            node.server.hub.startActivity(id)
+                .then(res => {
+                    if (!res.code || res.code != 200) {
+                        throw new Error();
+                    }
                     node.send({
-                        payload: true
+                        payload: {
+                            activity: id
+                        },
+                        activity: id
                     });
                 })
                 .catch(err => {
@@ -133,38 +94,44 @@ module.exports = function(RED) {
                         payload: false
                     });
                     console.log('Error: ' + err);
-                })
-        })
+                });
+        });
     }
     RED.nodes.registerType('HWS activity', HarmonyActivity);
 
-    function HarmonyObserve(n) {
-        RED.nodes.createNode(this, n);
-        var node = this;
 
-        node.server = RED.nodes.getNode(n.server);
-        node.label = n.label;
+
+    function HarmonyObserve(config) {
+        var node = this;
+        RED.nodes.createNode(this, config);
+
+        node.server = RED.nodes.getNode(config.server);
 
         if (!node.server) return;
 
+        node.on('input', msg => {
+            node.send({
+                payload: {
+                    activity: node.server.hub.activityId,
+                    status: node.server.hub.activityStatus
+                },
+                activity: node.server.hub.activityId,
+                status: node.server.hub.activityStatus
+            });
+        });
+
         setTimeout(() => {
-            try {
-                node.server.harmonyEventEmitter.on('stateDigest', digest => {
-                    try {
-                        node.send({
-                            payload: {
-                                activityId: digest.data.activityId,
-                                activityStatus: digest.data.activityStatus
-                            }
-                        });
-                    } catch (err) {
-                        console.log('Error: ' + err);
-                    }
-                })
-            } catch (err) {
-                console.log('Error: ' + err);
-            }
-        }, 2000);
+            node.server.hub.on('stateDigest', digest => {
+                node.send({
+                    payload: {
+                        activity: digest.activityId,
+                        status: digest.activityStatus
+                    },
+                    activity: digest.activityId,
+                    status: digest.activityStatus
+                });
+            });
+        }, 5000);
     }
     RED.nodes.registerType('HWS observe', HarmonyObserve);
 }

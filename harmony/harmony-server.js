@@ -1,146 +1,65 @@
-const HarmonyHubDiscover = require('@harmonyhub/discover').Explorer
-var Harmony = require('harmony-websocket')
-var events = require('events')
-var netstat = require('node-netstat')
-const NodeCache = require('node-cache');
+const HarmonyHubDiscover = require('@harmonyhub/discover').Explorer;
+const Hub = require('./hub');
+const events = require('events');
+const netstat = require('node-netstat');
+const util = require('util');
 
-var debug = true;
+const debug = true;
 
 module.exports = function(RED) {
-    function HarmonyServerNode(n) {
-        RED.nodes.createNode(this, n);
+
+    RED.harmonyHubs = new Map();
+
+    function HarmonyServerNode(config) {
         var node = this;
+        RED.nodes.createNode(this, config);
 
-        node.ip = n.ip;
-        node.harmonyEventEmitter = new events.EventEmitter();
+        node.ip = config.ip;
+        node.events = new events.EventEmitter();
+        node.harmonyHubs = RED.harmonyHubs;
 
-        node.cache = new NodeCache();
+        node.hub = getHub(config.ip);
 
-        createClient(node);
-
-        node.getConfig = getConfig;
-        node.getActivities = getActivities;
-        node.getActivityCommands = getActivityCommands;
-        node.getDevices = getDevices;
-        node.getDeviceCommands = getDeviceCommands;
-
-        this.on('close', function() {
-            if (node.harmony && typeof node.harmony.end !== 'undefined') {
-                try {
-                    node.harmony.end();
-                } catch (e) {}
+        node.reconnect = () => {
+            if (!node.hub.isConnected()) {
+                node.hub.reloadConfig()
+                    .catch(err => {
+                        if (debug) console.error(err.message);
+                    });
             }
-        })
-    }
-    RED.nodes.registerType('harmonyws-server', HarmonyServerNode)
-
-    function createClient(node) {
-        if (node.harmony && typeof node.harmony.end !== 'undefined') {
-            try {
-                node.harmony.end();
-            } catch (e) {}
         }
-        node.harmony = new Harmony();
-        node.harmony.on('open', () => getConfig(node));
-        node.harmony.on('stateDigest', digest => node.harmonyEventEmitter.emit('stateDigest', digest));
-        node.harmony.on('close', () => createClient(node));
-        node.harmony.connect(node.ip)
+
+        node.hub.on('stateDigest', digest => node.events.emit('stateDigest', digest));
+        node.hub.on('close', node.reconnect);
+
+        setInterval(node.reconnect, 60000);
+
+        node.hub.getConfig()
             .catch(err => {
-                if (debug) console.log('error: ' + err);
+                if (debug) console.error(err);
             });
-    }
 
-    function getConfig(node) {
-
-        if (debug) console.log('getConfigCache?');
-        return node.harmony.getConfig()
-            .then(config => {
-                node.cache.set('config', config);
-            }).catch(err => {
-                if (debug) console.log('error: ' + err);
+        RED.events.on('nodes-started', function() {
+            node.emit('stateDigest', {
+                activityId: node.hub.activityId,
+                activityStatus: node.hub.activityStatus
             });
+        });
+
+        this.on('close', () => {
+            if (node.hub && typeof node.hub.end !== 'undefined') {
+                node.hub.removeAllListeners('open');
+                node.hub.removeAllListeners('stateDigest');
+                node.hub.removeAllListeners('close');
+                clearInterval(node.reconnect);
+                node.hub.end()
+                    .catch(err => {
+                        if (debug) console.error(err);
+                    });
+            }
+        });
     }
-
-    function getActivities(node) {
-
-        var config = node.cache.get('config');
-        if (!config) return false;
-
-        return config.data.activity
-            .map(action => {
-                return {
-                    id: action.id,
-                    label: action.label
-                }
-            });
-    }
-
-    function getActivityCommands(node, activityId) {
-
-        var config = node.cache.get('config');
-        if (!config) return false;
-
-        var activity = config.data.activity
-            .filter(act => {
-                return act.id === activityId
-            })
-            .pop();
-        return activity.controlGroup
-            .map(group => {
-                return group.function
-            })
-            .reduce((prev, curr) => {
-                return prev.concat(curr)
-            })
-            .map(cmd => {
-                return {
-                    action: cmd.action,
-                    label: cmd.label
-                }
-            });
-    }
-
-    function getDevices(node) {
-
-        var config = node.cache.get('config');
-        if (!config) return false;
-
-        return config.data.device
-            .filter(device => {
-                return device.controlGroup.length > 0
-            })
-            .map(device => {
-                return {
-                    id: device.id,
-                    label: device.label
-                }
-            });
-    }
-
-    function getDeviceCommands(node, deviceId) {
-
-        var config = node.cache.get('config');
-        if (!config) return false;
-
-        var device = config.data.device
-            .filter(device => {
-                return device.id === deviceId
-            })
-            .pop();
-        return device.controlGroup
-            .map(group => {
-                return group.function
-            })
-            .reduce((prev, curr) => {
-                return prev.concat(curr)
-            })
-            .map(cmd  => {
-                return {
-                    action: JSON.parse(cmd.action),
-                    label: cmd.label
-                }
-            });
-    }
+    RED.nodes.registerType('harmonyws-server', HarmonyServerNode);
 
     function getNextAvailablePort(portRangeAsString) {
         var portString = process.env.USE_PORT_RANGE || portRangeAsString
@@ -183,28 +102,17 @@ module.exports = function(RED) {
         }
     }
 
-    // bad!!!
-    // if there is no server registered
-    RED._harmony = {
-        cache: new NodeCache(),
-        getConfig: ip => {
-            var that = RED._harmony;
-            if (debug) console.log('getConfigCacheTemp?');
+    function getHub(ip) {
 
-            var harmonyClient = new Harmony();
-            return harmonyClient.connect(ip)
-                .then(() => harmonyClient.getConfig())
-                .then(config => {
-                    that.loaded = ip;
-                    that.cache.set('config', config);
-                    if (debug) console.log('getConfigCacheTemp:');
-                })
-                .then(() => harmonyClient.end());
-        },
-        getActivities: getActivities,
-        getActivityCommands: getActivityCommands,
-        getDevices: getDevices,
-        getDeviceCommands: getDeviceCommands
+        var hub = RED.harmonyHubs.get(ip);
+        if (!hub) {
+            hub = new Hub(ip);
+            RED.harmonyHubs.set(ip, hub);
+            RED.log.info('HarmonyWS create (' + ip + ')');
+            hub.on('open', () => RED.log.info('HarmonyWS open (' + ip + ')'));
+            hub.on('close', () => RED.log.info('HarmonyWS close (' + ip + ')'));
+        }
+        return hub;
     }
 
     RED.httpAdmin.get('/harmonyws/server', (req, res, next) => {
@@ -229,105 +137,77 @@ module.exports = function(RED) {
 
     RED.httpAdmin.get('/harmonyws/config', (req, res, next) => {
 
-        if (!req.query.id || !req.query.ip) {
+        if (!req.query.ip) {
             res.status(400).send('Missing argument');
         } else {
-            var node = RED.nodes.getNode(req.query.id);
-            if (!node) {
-                res.status(400).send('Please deploy first');
-                return
-            }
-            node.getConfig(node)
-                .then(() => res.status(200).send());
+            var hub = getHub(req.query.ip);
+            hub.reloadConfig()
+                .then(config => res.status(200).send(JSON.stringify(config)))
+                .catch(err => res.status(400).send('Error getConfig: ' + err));
         }
     });
 
     RED.httpAdmin.get('/harmonyws/activities', (req, res, next) => {
-        if (!req.query.id || !req.query.ip) {
+
+        if (!req.query.ip) {
             res.status(400).send('Missing argument');
         } else {
-            var node = RED.nodes.getNode(req.query.id);
-            if (!node) {
-                var harmony = RED._harmony;
-                if (harmony.loaded === req.query.ip) {
-                    res.status(200).send(JSON.stringify(harmony.getActivities(harmony)))
-                } else {
-                    harmony.getConfig(req.query.ip)
-                        .then(() => {
-                            res.status(200).send(JSON.stringify(harmony.getActivities(harmony)))
-                        })
-                    .catch((err) => res.status(400).send('Please deploy first'));
-                }
-                return;
-            }
-            res.status(200).send(JSON.stringify(node.getActivities(node)));
+            var hub = getHub(req.query.ip);
+            hub.getActivities()
+                .then(activities => res.status(200).send(JSON.stringify(activities)))
+                .catch(err => res.status(400).send('Error getActivities: ' + err));
         }
     });
 
-    RED.httpAdmin.get('/harmonyws/commands', (req, res, next) => {
+    RED.httpAdmin.get('/harmonyws/activityCommands', (req, res, next) => {
 
-        if (!req.query.id || !req.query.ip || !req.query.activity) {
+        if (!req.query.ip || !req.query.activity) {
             res.status(400).send('Missing argument');
         } else {
-            var node = RED.nodes.getNode(req.query.id);
-            if (!node) {
-                var harmony = RED._harmony;
-                if (harmony.loaded === req.query.ip) {
-                    res.status(200).send(JSON.stringify(harmony.getActivityCommands(harmony, req.query.activity)))
-                } else {
-                    harmony.getConfig(req.query.ip)
-                        .then(() => {
-                            res.status(200).send(JSON.stringify(harmony.getActivityCommands(harmony, req.query.activity)))
-                        })
-                    .catch((err) => res.status(400).send('Please deploy first'));
-                }
-                return;
-            }
-            res.status(200).send(JSON.stringify(node.getActivityCommands(node, req.query.activity)));
+            var hub = getHub(req.query.ip);
+            hub.getActivityCommands(req.query.activity)
+                .then(commands => res.status(200).send(JSON.stringify(commands)))
+                .catch(err => res.status(400).send('Error getActivityCommands: ' + err));
         }
     });
 
     RED.httpAdmin.get('/harmonyws/devices', (req, res, next) => {
 
-        if (!req.query.id || !req.query.ip) {
+        if (!req.query.ip) {
             res.status(400).send('Missing argument');
         } else {
-            var node = RED.nodes.getNode(req.query.id);
-            if (!node) {
-                var harmony = RED._harmony;
-                if (harmony.loaded === req.query.ip) {
-                    res.status(200).send(JSON.stringify(harmony.getDevices(harmony)))
-                } else {
-                    harmony.getConfig(req.query.ip)
-                        .then(() => {
-                            res.status(200).send(JSON.stringify(harmony.getDevices(harmony)))
-                        }).catch((err) => res.status(400).send('Please deploy first'));
-                }
-                return;
-            }
-            res.status(200).send(JSON.stringify(node.getDevices(node)));
+            var hub = getHub(req.query.ip);
+            hub.getDevices()
+                .then(devices => res.status(200).send(JSON.stringify(devices)))
+                .catch(err => res.status(400).send('Error getDevices: ' + err));
         }
     });
 
-    RED.httpAdmin.get('/harmonyws/device-commands', (req, res, next) => {
+    RED.httpAdmin.get('/harmonyws/deviceCommands', (req, res, next) => {
 
-        if (!req.query.id || !req.query.ip || !req.query.device) {
+        if (!req.query.ip || !req.query.device) {
             res.status(400).send('Missing argument');
         } else {
-            var node = RED.nodes.getNode(req.query.id);
-            if (!node) {
-                var harmony = RED._harmony;
-                if (harmony.loaded === req.query.ip) {
-                    res.status(200).send(JSON.stringify(harmony.getDeviceCommands(harmony, req.query.device)))
-                } else {
-                    harmony.getConfig(req.query.ip)
-                        .then(() => {
-                            res.status(200).send(JSON.stringify(harmony.getDeviceCommands(harmony, req.query.device)))
-                        }).catch((err) => res.status(400).send('Please deploy first'));
-                }
-                return;
-            }
-            res.status(200).send(JSON.stringify(node.getDeviceCommands(node, req.query.device)));
+            var hub = getHub(req.query.ip);
+            hub.getDeviceCommands(req.query.device)
+                .then(commands => res.status(200).send(JSON.stringify(commands)))
+                .catch(err => res.status(400).send('Error getDevices: ' + err));
+        }
+    });
+
+    RED.httpAdmin.get('/harmonyws/activitiesAndDevices', (req, res, next) => {
+
+        if (!req.query.ip) {
+            res.status(400).send('Missing argument');
+        } else {
+            var hub = getHub(req.query.ip);
+            var list = [];
+            hub.getActivities()
+                .then(activities => list = activities)
+                .then(() => hub.getDevices())
+                .then(devices => list = list.concat(devices))
+                .then(() => res.status(200).send(JSON.stringify(list)))
+                .catch(err => res.status(400).send('Error getDevices: ' + err));
         }
     });
 }
