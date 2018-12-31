@@ -24,7 +24,10 @@
       "harmonyws-server": "harmony/harmony-server.js"
     }
   },
-  "author": "lopelex",
+  "author": [
+      {"name": "Stefan Krüger"},
+      {"name": "lopelex"}
+  ],
   "scripts": {
     "test": "./node_modules/jshint/bin/jshint"
   },
@@ -37,6 +40,5 @@
   "bugs": {
     "url": "https://github.com/lopelex/node-red-contrib-harmony/issues"
   },
-  "homepage": "https://github.com/lopelex/node-red-contrib-harmony#readme",
-  "main": "index.js"
+  "homepage": "https://github.com/lopelex/node-red-contrib-harmony#readme"
 }

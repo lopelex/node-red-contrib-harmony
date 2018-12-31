@@ -1,5 +1,9 @@
 # Harmony Hub Websocket Integration for Node-RED
 
+[![GitHub release](https://img.shields.io/github/release/Aietes/node-red-contrib-harmony-websocket.svg)](https://github.com/Aietes/node-red-contrib-harmony-websocket/releases/latest)	 
+[![npm](https://img.shields.io/npm/v/node-red-contrib-harmony-websocket/latest.svg)](https://www.npmjs.com/package/node-red-contrib-harmony-websocket)	 
+[![npm package](https://img.shields.io/npm/dm/node-red-contrib-harmony-websocket.svg)](https://www.npmjs.com/package/node-red-contrib-harmony-websocket)
+
 **Workaround for firmware update 4.15.206**
 
 Control your devices connected to a Logitech&trade; Harmony Hub from [Node-RED](https://nodered.org).
