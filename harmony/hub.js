@@ -232,8 +232,14 @@ class Hub extends EventEmitter {
         let promise = () => {
             return new Promise((resolve, reject) => {
                 for (let i = 0; i < repeat; i++) {
-                    this.harmony.sendCommands(action, delay)
-                        .catch(err => reject(err));
+                    if(delay > 0) {
+                        this.harmony.sendCommandsWithDelay(action, delay)
+                            .catch(err => reject(err));
+                    }
+                    else {
+                        this.harmony.sendCommands(action)
+                            .catch(err => reject(err));
+                    }
                 }
                 resolve();
             });
