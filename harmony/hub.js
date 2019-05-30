@@ -24,6 +24,9 @@ class Hub extends EventEmitter {
             this.harmony.on('stateDigest', digest => this._onStateDigest(digest));
         }
 
+        // if(this.isConnected()) {
+        //     return Promise.resolve();
+        // }
         return this.harmony.connect(this.ip)
             .then(() => this.harmony.getCurrentActivity())
             .then(activityId => {
@@ -227,28 +230,29 @@ class Hub extends EventEmitter {
         });
     }
 
-    sendCommand(action, delay, repeat) {
+    sendCommand(action, hold, repeat, delay) {
 
-        let promise = () => {
-            return new Promise((resolve, reject) => {
-                for (let i = 0; i < repeat; i++) {
-                    if(delay > 0) {
-                        this.harmony.sendCommandsWithDelay(action, delay)
-                            .catch(err => reject(err));
-                    }
-                    else {
-                        this.harmony.sendCommands(action)
-                            .catch(err => reject(err));
-                    }
-                }
-                resolve();
-            });
+        let promise = Promise.resolve();
+
+        for (let i = 0; i < repeat; i++) {
+            if (hold > 0) {
+                promise = promise
+                    .then(() => this.harmony.sendCommandWithDelay(action, hold))
+                    .then(response => new Promise(resolve => setTimeout(() => resolve(response), delay)))
+                    .catch(err => reject(err));
+            } else {
+                promise = promise
+                    .then(() => this.harmony.sendCommand(action))
+                    .then(response => new Promise(resolve => setTimeout(() => resolve(response), delay)))
+                    .catch(err => reject(err));
+            }
         }
+
         if (!this.isConnected()) {
             return this._connect()
-                .then(() => promise());
+                .then(() => promise);
         }
-        return promise();
+        return promise;
     }
 
     end() {

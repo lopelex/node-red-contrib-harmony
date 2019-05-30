@@ -28,6 +28,10 @@
         </div>
     </div>
     <div class="form-row">
+        <label for="node-input-hold"><i class="fa fa-hourglass-start"></i> Hold time</label>
+        <input type="text" id="node-input-hold">
+    </div>
+    <div class="form-row">
         <label for="node-input-repeat"><i class="fa fa-repeat"></i> Repeat</label>
         <input type="text" id="node-input-repeat">
     </div>
@@ -81,6 +85,12 @@
             },
             command: {
                 value: ''
+            },
+            hold: {
+                value: '0',
+                validate: function(value) {
+                    return value > -1;
+                }
             },
             repeat: {
                 value: '1',

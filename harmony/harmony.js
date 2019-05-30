@@ -9,8 +9,9 @@ module.exports = function(RED) {
         node.label = config.label;
         node.command = config.command;
         node.harmonyType = config.harmonyType;
-        node.delay = Number.parseInt(config.delay) || 50;
+        node.hold = Number.parseInt(config.hold) || 0;
         node.repeat = Number.parseInt(config.repeat) || 1;
+        node.delay = Number.parseInt(config.delay) || 0;
 
         if (!node.server) return;
 
@@ -37,7 +38,7 @@ module.exports = function(RED) {
                     payload: false
                 });
             } else {
-                node.server.hub.sendCommand(action, node.delay, node.repeat)
+                node.server.hub.sendCommand(action, node.hold, node.repeat, node.delay)
                     .then(() => {
                         node.send({
                             payload: action

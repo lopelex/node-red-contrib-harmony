@@ -4,7 +4,7 @@
   "description": "Harmony Hub Websocket Integration for Node-RED",
   "license": "MIT",
   "dependencies": {
-    "harmony-websocket": "^1.0.7",
+    "harmony-websocket": "^1.1.0",
     "npm": "^6.8.0",
     "request": "^2.65.0",
     "request-promise": "^4.2.4",
@@ -30,8 +30,12 @@
     }
   },
   "author": [
-      {"name": "Stefan Krüger"},
-      {"name": "lopelex"}
+    {
+      "name": "Stefan Krüger"
+    },
+    {
+      "name": "lopelex"
+    }
   ],
   "scripts": {
     "test": "./node_modules/jshint/bin/jshint"
