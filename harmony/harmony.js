@@ -1,5 +1,7 @@
 module.exports = function(RED) {
 
+    const debug = false;
+
     function HarmonySendCommand(config) {
         RED.nodes.createNode(this, config);
         var node = this;
@@ -30,7 +32,7 @@ module.exports = function(RED) {
                 var action = node.server.hub.getAction(id || node.activity, command);
 
             } catch (err) {
-                console.log('Error: ' + err);
+                if (debug) console.log('Error: ' + err);
             }
 
             if (!action) {
@@ -48,7 +50,7 @@ module.exports = function(RED) {
                         node.send({
                             payload: false
                         });
-                        console.log('Error: ' + err);
+                        if (debug) console.log('Error: ' + err);
                     });
             }
         });
@@ -116,13 +118,11 @@ module.exports = function(RED) {
                     node.send({
                         payload: false
                     });
-                    console.log('Error: ' + err);
+                    if (debug) console.log('Error: ' + err);
                 });
         });
     }
     RED.nodes.registerType('HWS activity', HarmonyActivity);
-
-
 
     function HarmonyObserve(config) {
         var node = this;

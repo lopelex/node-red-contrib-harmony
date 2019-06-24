@@ -1,6 +1,8 @@
 const EventEmitter = require('events');
 const Harmony = require('harmony-websocket');
-const util = require('util');
+const isPortReachable = require('is-port-reachable');
+
+DEFAULT_HUB_PORT = 8088;
 
 
 class Hub extends EventEmitter {
@@ -24,10 +26,16 @@ class Hub extends EventEmitter {
             this.harmony.on('stateDigest', digest => this._onStateDigest(digest));
         }
 
-        // if(this.isConnected()) {
-        //     return Promise.resolve();
-        // }
-        return this.harmony.connect(this.ip)
+        return isPortReachable(DEFAULT_HUB_PORT, {
+                host: this.ip,
+                timeout: 2000
+            })
+            .then((result) => {
+                if(!result) {
+                    throw new Error('Hub not reachable');
+                }
+            })
+            .then(() => this.harmony.connect(this.ip))
             .then(() => this.harmony.getCurrentActivity())
             .then(activityId => {
                 this.activityId = activityId;

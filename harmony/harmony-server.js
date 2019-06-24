@@ -4,7 +4,7 @@ const events = require('events');
 const netstat = require('node-netstat');
 const util = require('util');
 
-const debug = true;
+const debug = false;
 
 module.exports = function(RED) {
 
@@ -56,6 +56,7 @@ module.exports = function(RED) {
                     .catch(err => {
                         if (debug) console.error(err);
                     });
+                delete(node.hub);
             }
         });
     }
