@@ -21,11 +21,13 @@ module.exports = function(RED) {
         node.hub = getHub(config.ip);
 
         node.reconnect = () => {
-            if (!node.hub.isConnected()) {
-                node.hub.reloadConfig()
-                    .catch(err => {
-                        if (debug) console.error(err.message);
-                    });
+            if (node.hub && typeof node.hub.isConnected !== 'undefined') {
+                if (!node.hub.isConnected()) {
+                    node.hub.reloadConfig()
+                        .catch(err => {
+                            if (debug) console.error(err.message);
+                        });
+                }
             }
         }
 
