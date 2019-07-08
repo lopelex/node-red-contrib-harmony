@@ -1,10 +1,10 @@
 {
   "name": "node-red-contrib-harmony-websocket",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Harmony Hub Websocket Integration for Node-RED",
   "license": "MIT",
   "dependencies": {
-    "harmony-websocket": "^1.1.0",
+    "harmony-websocket": "^1.2.0",
     "npm": "^6.8.0",
     "request": "^2.65.0",
     "request-promise": "^4.2.4",
