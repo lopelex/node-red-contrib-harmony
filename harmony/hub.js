@@ -208,7 +208,7 @@ class Hub extends EventEmitter {
     getCurrentActivity() {
 
         let promise = () => {
-            return this.getCurrentActivity()
+            return this.harmony.getCurrentActivity()
                 .then(activityId => {
                     this.activityId = activityId;
                     this.activityStatus = 4;
