@@ -51,7 +51,7 @@ module.exports = function(RED) {
                 node.hub.removeAllListeners('stateDigest');
                 node.hub.removeAllListeners('close');
                 clearInterval(node.reconnect);
-                node.hub.end()
+                node.hub.close()
                     .catch(err => {
                         if (debug) console.error(err);
                     });

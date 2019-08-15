@@ -43,7 +43,6 @@ class Hub extends EventEmitter {
             })
             .then(() => this.harmony.getConfig())
             .then(config => {
-                this.connected = true;
                 this.config = config;
             })
             .then(() => this.config);
@@ -259,10 +258,10 @@ class Hub extends EventEmitter {
         return promise;
     }
 
-    end() {
+    close() {
 
         if (this.harmony) {
-            return this.harmony.end();
+            return this.harmony.close();
         }
     }
 }
