@@ -16,18 +16,15 @@ module.exports = function(RED) {
 
         node.ip = config.ip;
         node.events = new events.EventEmitter();
-        node.harmonyHubs = RED.harmonyHubs;
 
         node.hub = getHub(config.ip);
 
         node.reconnect = () => {
-            if (node.hub && typeof node.hub.isConnected !== 'undefined') {
-                if (!node.hub.isConnected()) {
-                    node.hub.reloadConfig()
-                        .catch(err => {
-                            if (debug) console.error(err.message);
-                        });
-                }
+            if (!node.hub.isConnected()) {
+                node.hub.reloadConfig()
+                    .catch(err => {
+                        if (debug) console.error(err.message);
+                    });
             }
         }
 
@@ -58,7 +55,7 @@ module.exports = function(RED) {
                     .catch(err => {
                         if (debug) console.error(err);
                     });
-                delete(node.hub);
+                //delete(node.hub);
             }
         });
     }

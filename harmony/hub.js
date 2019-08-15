@@ -63,11 +63,7 @@ class Hub extends EventEmitter {
 
     isConnected() {
 
-        try {
-            return this.harmony._client._ws._connection.connected;
-        } catch (e) {
-            return false;
-        }
+        return this.harmony.isOpened();
     }
 
     reloadConfig() {
