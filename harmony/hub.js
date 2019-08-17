@@ -2,7 +2,7 @@ const EventEmitter = require('events');
 const Harmony = require('harmony-websocket');
 const isPortReachable = require('is-port-reachable');
 
-DEFAULT_HUB_PORT = 8088;
+const DEFAULT_HUB_PORT = 8088;
 
 
 class Hub extends EventEmitter {
@@ -27,9 +27,9 @@ class Hub extends EventEmitter {
         }
 
         return isPortReachable(DEFAULT_HUB_PORT, {
-                host: this.ip,
-                timeout: 2000
-            })
+            host: this.ip,
+            timeout: 2000
+        })
             .then((result) => {
                 if(!result) {
                     throw new Error('Hub not reachable');
@@ -57,7 +57,9 @@ class Hub extends EventEmitter {
                 activityId: this.activityId,
                 activityStatus: this.activityStatus
             });
-        } catch (err) {}
+        } catch (err) {
+            //
+        }
     }
 
     isConnected() {
@@ -100,7 +102,7 @@ class Hub extends EventEmitter {
                                 return {
                                     action: cmd.action,
                                     label: cmd.label
-                                }
+                                };
                             });
                         activity.commands = commands;
                         return true;
@@ -110,7 +112,7 @@ class Hub extends EventEmitter {
                             label: activity.label,
                             commands: activity.commands,
                             type: 'activity'
-                        }
+                        };
                     });
             });
     }
@@ -121,21 +123,21 @@ class Hub extends EventEmitter {
             .then(config => {
                 let activity = config.data.activity
                     .filter(act => {
-                        return act.id === activityId
+                        return act.id === activityId;
                     })
                     .pop();
                 return activity.controlGroup
                     .map(group => {
-                        return group.function
+                        return group.function;
                     })
                     .reduce((prev, curr) => {
-                        return prev.concat(curr)
+                        return prev.concat(curr);
                     }, [])
                     .map(cmd => {
                         return {
                             action: cmd.action,
                             label: cmd.label
-                        }
+                        };
                     });
             });
     }
@@ -153,7 +155,7 @@ class Hub extends EventEmitter {
                                 return {
                                     action: cmd.action,
                                     label: cmd.label
-                                }
+                                };
                             });
                         dev.commands = commands;
                         return true;
@@ -163,7 +165,7 @@ class Hub extends EventEmitter {
                             label: dev.label,
                             commands: dev.commands,
                             type: 'device'
-                        }
+                        };
                     });
             });
     }
@@ -182,7 +184,7 @@ class Hub extends EventEmitter {
                         return {
                             action: JSON.parse(cmd.action),
                             label: cmd.label
-                        }
+                        };
                     });
             });
     }
@@ -192,7 +194,7 @@ class Hub extends EventEmitter {
 
         let promise = () => {
             return this.harmony.startActivity(activityId);
-        }
+        };
         if (!this.isConnected()) {
             return this._connect()
                 .then(() => promise());
@@ -213,7 +215,7 @@ class Hub extends EventEmitter {
                     });
                 })
                 .then(() => this.activityId);
-        }
+        };
         if (!this.isConnected()) {
             return this._connect()
                 .then(() => promise());
@@ -242,12 +244,12 @@ class Hub extends EventEmitter {
                 promise = promise
                     .then(() => this.harmony.sendCommandWithDelay(action, hold))
                     .then(response => new Promise(resolve => setTimeout(() => resolve(response), delay)))
-                    .catch(err => reject(err));
+                    .catch(err => promise.reject(err));
             } else {
                 promise = promise
                     .then(() => this.harmony.sendCommand(action))
                     .then(response => new Promise(resolve => setTimeout(() => resolve(response), delay)))
-                    .catch(err => reject(err));
+                    .catch(err => promise.reject(err));
             }
         }
 
@@ -260,9 +262,7 @@ class Hub extends EventEmitter {
 
     close() {
 
-        if (this.harmony) {
-            return this.harmony.close();
-        }
+        return this.harmony ? this.harmony.close() : false;
     }
 }
 

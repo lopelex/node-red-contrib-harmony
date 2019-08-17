@@ -55,7 +55,7 @@ module.exports = function(RED) {
             }
         });
     }
-    RED.nodes.registerType('HWS command', HarmonySendCommand)
+    RED.nodes.registerType('HWS command', HarmonySendCommand);
 
     function toBoolean(value, defaultValue) {
         if (typeof value == 'boolean' || value instanceof Boolean) {
@@ -157,4 +157,4 @@ module.exports = function(RED) {
         }, 5000);
     }
     RED.nodes.registerType('HWS observe', HarmonyObserve);
-}
+};

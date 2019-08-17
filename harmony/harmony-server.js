@@ -2,7 +2,6 @@ const HarmonyHubDiscover = require('@harmonyhub/discover').Explorer;
 const Hub = require('./hub');
 const events = require('events');
 const netstat = require('node-netstat');
-const util = require('util');
 
 const debug = false;
 
@@ -26,7 +25,7 @@ module.exports = function(RED) {
                         if (debug) console.error(err.message);
                     });
             }
-        }
+        };
 
         node.hub.on('stateDigest', digest => node.events.emit('stateDigest', digest));
         node.hub.on('close', node.reconnect);
@@ -46,7 +45,7 @@ module.exports = function(RED) {
         });
 
         this.on('close', () => {
-            if (node.hub && typeof node.hub.end !== 'undefined') {
+            if (node.hub && typeof node.hub.close !== 'undefined') {
                 node.hub.removeAllListeners('open');
                 node.hub.removeAllListeners('stateDigest');
                 node.hub.removeAllListeners('close');
@@ -62,15 +61,15 @@ module.exports = function(RED) {
     RED.nodes.registerType('harmonyws-server', HarmonyServerNode);
 
     function getNextAvailablePort(portRangeAsString) {
-        var portString = process.env.USE_PORT_RANGE || portRangeAsString
+        var portString = process.env.USE_PORT_RANGE || portRangeAsString;
 
         if (portString) {
-            var portStart, portLast
+            var portStart, portLast;
 
-            portStart = parseInt(portString.split('-')[0])
-            portLast = parseInt(portString.split('-')[1])
+            portStart = parseInt(portString.split('-')[0]);
+            portLast = parseInt(portString.split('-')[1]);
 
-            var portArr = []
+            var portArr = [];
 
             netstat({
                 sync: true,
@@ -79,27 +78,26 @@ module.exports = function(RED) {
                         address: null
                     }
                 }
-            }, portArr.push.bind(portArr))
+            }, portArr.push.bind(portArr));
 
             portArr = portArr.map(
                 portInfo => portInfo.local.port
             ).filter(
                 // filter port range and also the index to eliminate duplicates
                 (portNr, index, arr) => portNr >= portStart && portNr <= portLast && arr.indexOf(portNr) === index
-            )
+            );
 
             if (portArr.length > portLast - portStart) {
-                throw new Error('No available port in the range ' + portString)
+                throw new Error('No available port in the range ' + portString);
             } else {
                 for (var i = portStart; i <= portLast; ++i) {
                     if (portArr.indexOf(i) < 0) {
-                        return i
+                        return i;
                     }
                 }
             }
-        } else {
-            return 0
         }
+        return 0;
     }
 
     function getHub(ip) {
@@ -131,7 +129,7 @@ module.exports = function(RED) {
                 res.end(JSON.stringify(hubsFound));
             }, 3000);
         } catch (e) {
-            res.status(200).send()
+            res.status(200).send();
         }
     });
 
@@ -147,6 +145,7 @@ module.exports = function(RED) {
         }
     });
 
+    // eslint-disable-next-line no-unused-vars
     RED.httpAdmin.get('/harmonyws/activities', (req, res, next) => {
 
         if (!req.query.ip) {
@@ -210,4 +209,4 @@ module.exports = function(RED) {
                 .catch(err => res.status(400).send('Error getDevices: ' + err));
         }
     });
-}
+};
