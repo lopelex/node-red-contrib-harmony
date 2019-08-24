@@ -4,14 +4,14 @@
   "description": "Harmony Hub Websocket Integration for Node-RED",
   "license": "MIT",
   "dependencies": {
-    "harmony-websocket": "^1.3.0",
     "npm": "^6.8.0",
+    "harmony-websocket": "^1.3.0",
     "request": "^2.65.0",
     "request-promise": "^4.2.4",
     "websocket": "^1.0.28",
     "websocket-as-promised": "^0.9.0",
-    "node-netstat": "^1.6.0",
-    "@harmonyhub/discover": "^1.0.8",
+    "node-ssdp": "latest",
+    "node-upnp": "latest",
     "is-port-reachable": "^2.0.1"
   },
   "repository": {
@@ -26,18 +26,16 @@
   ],
   "node-red": {
     "nodes": {
-      "harmonyws": "harmony/harmony.js",
-      "harmonyws-server": "harmony/harmony-server.js"
+      "hws-server": "nodes/server.js",
+      "hws-api": "lib/api.js",
+      "hws-activity": "nodes/activity.js",
+      "hws-command": "nodes/command.js",
+      "hws-observer": "nodes/observer.js"
     }
   },
-  "author": [
-    {
-      "name": "Stefan Krüger"
-    },
-    {
-      "name": "lopelex"
-    }
-  ],
+  "author": {
+      "name": "Stefan Krüger, lopelex"
+  },
   "scripts": {
     "test": "./node_modules/jshint/bin/jshint"
   },

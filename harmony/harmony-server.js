@@ -1,7 +1,6 @@
-const HarmonyHubDiscover = require('@harmonyhub/discover').Explorer;
 const Hub = require('./hub');
 const events = require('events');
-const netstat = require('node-netstat');
+const discover = require('./discover');
 
 const debug = false;
 
@@ -59,47 +58,7 @@ module.exports = function(RED) {
         });
     }
     RED.nodes.registerType('harmonyws-server', HarmonyServerNode);
-
-    function getNextAvailablePort(portRangeAsString) {
-        var portString = process.env.USE_PORT_RANGE || portRangeAsString;
-
-        if (portString) {
-            var portStart, portLast;
-
-            portStart = parseInt(portString.split('-')[0]);
-            portLast = parseInt(portString.split('-')[1]);
-
-            var portArr = [];
-
-            netstat({
-                sync: true,
-                filter: {
-                    local: {
-                        address: null
-                    }
-                }
-            }, portArr.push.bind(portArr));
-
-            portArr = portArr.map(
-                portInfo => portInfo.local.port
-            ).filter(
-                // filter port range and also the index to eliminate duplicates
-                (portNr, index, arr) => portNr >= portStart && portNr <= portLast && arr.indexOf(portNr) === index
-            );
-
-            if (portArr.length > portLast - portStart) {
-                throw new Error('No available port in the range ' + portString);
-            } else {
-                for (var i = portStart; i <= portLast; ++i) {
-                    if (portArr.indexOf(i) < 0) {
-                        return i;
-                    }
-                }
-            }
-        }
-        return 0;
-    }
-
+    
     function getHub(ip) {
 
         var hub = RED.harmonyHubs.get(ip);
@@ -113,27 +72,14 @@ module.exports = function(RED) {
         return hub;
     }
 
-    RED.httpAdmin.get('/harmonyws/server', (req, res, next) => {
+    RED.httpAdmin.get('/harmonyws/server', (req, res /*, next */) => {
 
-        try {
-            const discover = new HarmonyHubDiscover(getNextAvailablePort('5002-5100'));
-            var hubsFound;
-
-            discover.on('update', hubs => {
-                hubsFound = hubs;
-            });
-
-            discover.start();
-            setTimeout(() => {
-                discover.stop();
-                res.end(JSON.stringify(hubsFound));
-            }, 3000);
-        } catch (e) {
-            res.status(200).send();
-        }
+        discover(3000).then((hubsFound) => { 
+            res.end(JSON.stringify(hubsFound));
+        });
     });
 
-    RED.httpAdmin.get('/harmonyws/config', (req, res, next) => {
+    RED.httpAdmin.get('/harmonyws/config', (req, res /*, next */) => {
 
         if (!req.query.ip) {
             res.status(400).send('Missing argument');
@@ -145,8 +91,7 @@ module.exports = function(RED) {
         }
     });
 
-    // eslint-disable-next-line no-unused-vars
-    RED.httpAdmin.get('/harmonyws/activities', (req, res, next) => {
+    RED.httpAdmin.get('/harmonyws/activities', (req, res /*, next */) => {
 
         if (!req.query.ip) {
             res.status(400).send('Missing argument');
@@ -158,7 +103,7 @@ module.exports = function(RED) {
         }
     });
 
-    RED.httpAdmin.get('/harmonyws/activityCommands', (req, res, next) => {
+    RED.httpAdmin.get('/harmonyws/activityCommands', (req, res /*, next */) => {
 
         if (!req.query.ip || !req.query.activity) {
             res.status(400).send('Missing argument');
@@ -170,7 +115,7 @@ module.exports = function(RED) {
         }
     });
 
-    RED.httpAdmin.get('/harmonyws/devices', (req, res, next) => {
+    RED.httpAdmin.get('/harmonyws/devices', (req, res /*, next */) => {
 
         if (!req.query.ip) {
             res.status(400).send('Missing argument');
@@ -182,7 +127,7 @@ module.exports = function(RED) {
         }
     });
 
-    RED.httpAdmin.get('/harmonyws/deviceCommands', (req, res, next) => {
+    RED.httpAdmin.get('/harmonyws/deviceCommands', (req, res /*, next */) => {
 
         if (!req.query.ip || !req.query.device) {
             res.status(400).send('Missing argument');
@@ -194,7 +139,7 @@ module.exports = function(RED) {
         }
     });
 
-    RED.httpAdmin.get('/harmonyws/activitiesAndDevices', (req, res, next) => {
+    RED.httpAdmin.get('/harmonyws/activitiesAndDevices', (req, res /*, next */) => {
 
         if (!req.query.ip) {
             res.status(400).send('Missing argument');

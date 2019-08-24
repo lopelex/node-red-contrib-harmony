@@ -1,0 +1,115 @@
+<script type="text/x-red" data-template-name="hws-activity">
+    <div class="form-row">
+        <label for="node-input-server"><i class="fa fa-server"></i> Hub</label>
+        <input type="text" id="node-input-server">
+    </div>
+    <div class="form-row" style="text-align: right;">
+        <a id="node-input-config" class="editor-button"><i class="fa fa-refresh"></i></a>
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-activity"><i class="fa fa-television"></i> Activity</label>
+        <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
+            <select id="node-input-activity" style="width: 100%;"></select>
+        </div>
+    </div>
+</script>
+<script type="text/x-red" data-help-name="hws-activity">
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('hws-activity', {
+
+        category: 'harmony',
+        color: '#a6bbcf',
+        defaults: {
+            name: {
+                value: ''
+            },
+            server: {
+                type: 'hws-server',
+                required: true
+            },
+            activity: {
+                value: ''
+            }
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: 'feed.png',
+        label: function() {
+            return this.name || 'Activity';
+        },
+        paletteLabel: 'Activity',
+        oneditprepare: function() {
+
+            var node = this;
+            var server = $('#node-input-server').val();
+            var config = RED.nodes.node(server);
+
+            loadActivities(node.activity);
+
+            $('#node-input-server').on('change', function() {
+                config = RED.nodes.node(this.value)
+                loadActivities(node.activity);
+            });
+
+            $('#node-input-config').click(function() {
+                $('#node-input-activity').empty();
+                $('#node-input-activity').attr('disabled', 'disabled')
+                $.get('harmonyws/config', {
+                        ip: config.ip
+                    })
+                    .done(function(data) {
+                        loadActivities(node.activity);
+                    })
+                    .fail(function(err) {
+                        RED.notify(err.responseText, 'error')
+                    });
+            });
+
+            function loadActivities(selectedActivity) {
+
+                if (config && config.ip) {
+                    $('#node-input-activity').attr('disabled', 'disabled')
+                    $('#node-input-activity').append('<option value="" selected>Loading activities...</option>');
+
+                    var sucsess = false;
+
+                    $.get('hws/activities', {
+                            ip: config.ip
+                        })
+                        .done(function(data) {
+                            $('#node-input-activity').empty();
+
+                            var acts = JSON.parse(data);
+                            if (!acts || acts.length <= 0) {
+                                $('#node-input-activity').append("<option value='' selected>No activities found.</option>");
+                                // RED.notify('No activities found.', 'error');
+                            } else {
+                                acts.forEach(function(act) {
+                                    $('#node-input-activity').append('<option value="' + act.id + '">' + act.label + ' (' + act.id + ')</option>')
+                                    sucsess = true;
+                                });
+                            }
+                            if (sucsess) {
+                                $('#node-input-activity').removeAttr('disabled');
+                                $('#node-input-activity').val(selectedActivity);
+                            }
+                        })
+                        .fail(function(err) {
+                            $('#node-input-activity').empty();
+                            $('#node-input-activity').attr('disabled', 'disabled')
+                            RED.notify(err.responseText, 'error')
+                        });
+                }
+            }
+        },
+        oneditsave: function() {
+            this.activity = $('#node-input-activity').val();
+        }
+    });
+</script>

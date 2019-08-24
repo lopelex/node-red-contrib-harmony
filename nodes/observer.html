@@ -1,0 +1,35 @@
+<script type="text/x-red" data-template-name="hws-observer">
+    <div class="form-row">
+        <label for="node-input-server"><i class="fa fa-server"></i> Hub</label>
+        <input type="text" id="node-input-server">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+</script>
+<script type="text/x-red" data-help-name="hws-observer">
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('hws-observer', {
+        category: 'harmony',
+        color: '#a6bbcf',
+        defaults: {
+            name: {
+                value: ''
+            },
+            server: {
+                type: 'hws-server',
+                required: true
+            }
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: 'feed.png',
+        label: function() {
+            return this.name || 'Observer';
+        },
+        paletteLabel: 'Observer'
+    });
+</script>

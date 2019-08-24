@@ -21,7 +21,7 @@ module.exports = function(RED) {
 
             try {
 
-                var [type, id, command] = decodeURI(node.command).split(':');
+                var [, id, command] = decodeURI(node.command).split(':');
 
                 if (msg.payload.command) {
                     command = msg.payload.command;
@@ -132,7 +132,7 @@ module.exports = function(RED) {
 
         if (!node.server) return;
 
-        node.on('input', msg => {
+        node.on('input', () => {
             node.send({
                 payload: {
                     activity: node.server.hub.activityId,

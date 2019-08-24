@@ -5,7 +5,7 @@
         "es6": true
     },
     "globals": {
-        "Atomics": "readonly",
+        "Atomics": "readonly",        
         "SharedArrayBuffer": "readonly"
     },
     "parserOptions": {

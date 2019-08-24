@@ -1,4 +1,4 @@
-<script type="text/x-red" data-template-name="harmonyws-server">
+<script type="text/x-red" data-template-name="hws-server">
     <div class="form-row">
       <label for="node-config-input-name"><i class="fa fa-header"></i> Name</label>
       <input type="text" id="node-config-input-name" />
@@ -15,7 +15,7 @@
 </script>
 
 <script type="text/javascript">
-    RED.nodes.registerType("harmonyws-server", {
+    RED.nodes.registerType("hws-server", {
         category: "config",
         defaults: {
             name: {
@@ -28,15 +28,16 @@
             },
         },
         label: function() {
-            return this.name ? this.name : "Harmony Server";
-        },
+            return this.name ? this.name : "Harmony Hub";
+        },        
+        paletteLabel: 'Harmony Hub Server',
         oneditprepare: function() {
 
             function scanForHubs(selected_ip) {
                 $('#node-config-input-select-trigger').addClass('disabled')
                 $('#node-config-input-ip-select').attr('disabled', 'disabled')
                 $('#node-config-input-ip-select').append("<option value='' selected>Scanning for hubs...</option>")
-                $.get('harmonyws/server')
+                $.get('/hws/discover')
                     .done(function(data) {
                         var hubs = JSON.parse(data);
                         $('#node-config-input-ip-select').empty()

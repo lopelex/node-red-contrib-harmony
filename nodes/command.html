@@ -1,0 +1,204 @@
+<script type="text/x-red" data-template-name="hws-command">
+    <div class="form-row">
+        <label for="node-input-server"><i class="fa fa-server"></i> Hub</label>
+        <input type="text" id="node-input-server">
+    </div>
+    <div class="form-row" style="text-align: right;">
+        <a id="node-input-config" class="editor-button"><i class="fa fa-refresh"></i></a>
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="icon-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-activity"><i class="fa fa-television"></i> Activity</label>
+        <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
+            <select id="node-input-activity" style="width: 100%;"></select>
+        </div>
+    </div>
+    <div class="form-row">
+        <label for="node-input-command"><i class="fa fa-keyboard-o"></i> Command</label>
+        <div style="display: inline-block; position: relative; width: 70%; height: 20px;">
+            <select id="node-input-command" style="width: 100%;"></select>
+        </div>
+    </div>
+    <div class="form-row">
+        <label for="node-input-hold"><i class="fa fa-hourglass-start"></i> Hold time</label>
+        <input type="text" id="node-input-hold">
+    </div>
+    <div class="form-row">
+        <label for="node-input-repeat"><i class="fa fa-repeat"></i> Repeat</label>
+        <input type="text" id="node-input-repeat">
+    </div>
+    <div class="form-row">
+        <label for="node-input-delay"><i class="fa fa-hourglass-start"></i> Delay</label>
+        <input type="text" id="node-input-delay">
+    </div>
+</div>
+</script>
+<script type="text/x-red" data-help-name="hws-command">
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('hws-command', {
+        category: 'harmony',
+        color: '#a6bbcf',
+        defaults: {
+            name: {
+                value: ''
+            },
+            server: {
+                type: 'hws-server',
+                required: true
+            },
+            activity: {
+                value: ''
+            },
+            command: {
+                value: ''
+            },
+            hold: {
+                value: '0',
+                validate: function(value) {
+                    return value > -1;
+                }
+            },
+            repeat: {
+                value: '1',
+                validate: function(value) {
+                    return value > 0;
+                }
+            },
+            delay: {
+                value: '0',
+                validate: function(value) {
+                    return value > -1;
+                }
+            }
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: 'feed.png',
+        label: function() {
+            return this.name || 'Command';
+        },
+        paletteLabel: 'Command',
+        oneditprepare: function () {
+
+            var node = this;
+            var server = $('#node-input-server').val();
+            var config = RED.nodes.node(server);
+
+            loadActivitiesAndDevices(node.activity);
+
+            $('#node-input-server').on('change', function() {
+                config = RED.nodes.node(this.value);
+                loadActivitiesAndDevices(node.activity);
+            });
+
+            $('#node-input-activity').on('change', function() {
+                loadCommands(this.value, node.command);
+            });
+
+            $('#node-input-config').click(function() {
+                $('#node-input-activity').empty();
+                $('#node-input-activity').attr('disabled', 'disabled')
+                $('#node-input-command').empty();
+                $('#node-input-command').attr('disabled', 'disabled')
+                $.get('hws/config', {
+                        ip: config.ip
+                    })
+                    .done(function(data) {
+                        loadActivitiesAndDevices(node.activity);
+                    })
+                    .fail(function(err) {
+                        RED.notify(err.responseText, 'error')
+                    });
+            });
+
+            function loadActivitiesAndDevices(selected) {
+
+                if (config && config.ip) {
+                    $('#node-input-activity').attr('disabled', 'disabled')
+                    $('#node-input-activity').append('<option value="" selected>Loading...</option>');
+
+                    var sucsess = false;
+                    node.data = [];
+
+                    $.get('hws/activitiesAndDevices', {
+                            ip: config.ip
+                        })
+                        .done(function(data) {
+
+                            $('#node-input-activity').empty();
+                            var acts = JSON.parse(data);
+                            if (!acts || acts.length <= 0) {
+                                $('#node-input-activity').append("<option value='' selected>No activities found.</option>");
+                                // RED.notify('No activities found.', 'error');
+                            } else {
+                                node.data = JSON.parse(data);
+                                acts.forEach(function(act) {
+                                    if (act.id > 0) {
+                                        $('#node-input-activity').append('<option value="' + act.id + '">' + act.label + ' (' + act.id + ')</option>');
+                                        sucsess = true;
+                                    }
+                                })
+                            }
+                            if (sucsess) {
+                                $('#node-input-activity').removeAttr('disabled');
+                                $('#node-input-activity').val(selected);
+                                loadCommands(node.activity, node.command);
+                            }
+                        })
+                        .fail(function(err) {
+                            $('#node-input-activity').empty();
+                            $('#node-input-activity').attr('disabled', 'disabled');
+                            RED.notify(err.responseText, 'error')
+                        });
+                }
+            }
+
+            function loadCommands(id, selected) {
+
+                if (node.data && id) {
+
+                    $('#node-input-command').attr('disabled', 'disabled')
+                    $('#node-input-command').append("<option value='' selected>Loading commands...</option>")
+
+                    var sucsess = false;
+
+                    try {
+                        var act = $.grep(node.data, function(obj) {
+                            return obj.id === id;
+                        }).pop();
+
+                        $('#node-input-command').empty();
+                        if (!act.commands || act.commands.length <= 0) {
+                            $('#node-input-command').append("<option value='' selected>No commands found.</option>");
+                        } else {
+                            act.commands.forEach(function(cmd) {
+
+                                var cmdAction = JSON.parse(cmd.action);
+                                var action = encodeURI(cmdAction.deviceId + ':' + cmdAction.command);
+                                $('#node-input-command').append('<option value="' + action + '">' + cmd.label + '</option>');
+                                sucsess = true;
+                            });
+                        }
+                        if (sucsess) {
+                            $('#node-input-command').removeAttr('disabled');
+                            $('#node-input-command').val(selected);
+                        }
+                    } catch (err) {
+                        $('#node-input-command').empty();
+                        $('#node-input-command').attr('disabled', 'disabled');
+                        RED.notify(err.responseText, 'error')
+                    }
+                }
+            }
+        },
+        oneditsave: function() {
+            this.activity = $('#node-input-activity').val();
+            this.command = $('#node-input-command').val();
+        }
+    });
+</script>
