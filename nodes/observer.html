@@ -7,6 +7,31 @@
         <label for="node-input-name"><i class="icon-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
     </div>
+    <div class="form-row">
+        <label for='node-input-startup'><i class='fa fa-share-square'></i> on startup</label>
+        <input type="checkbox" id="node-input-startup" checked="checked">
+    </div>
+    <div class="form-row">
+        <label for='node-input-toContext'><i class='fa fa-share-square'></i> to context</label>
+        <input type="checkbox" id="node-input-toContext">
+    </div>
+    <div id="node-input-context-group">
+        <div class="form-row">
+            <label for="node-input-context"><i class=""></i> Context</label>
+            <select id="node-input-context">
+                <option value="global">global</option>
+                <option value="flow">flow</option>
+            </select>
+        </div>
+        <div class="form-row">
+            <label for="node-input-contextKeyActivity"><i class=""></i> Context key for current activity</label>
+            <input type="text" id="node-input-contextKeyActivity" placeholder="Key">
+        </div>
+        <div class="form-row">
+            <label for="node-input-contextKeyAutomation"><i class=""></i> Context key for automation</label>
+            <input type="text" id="node-input-contextKeyAutomation" placeholder="Key">
+        </div>
+    </div>
 </script>
 <script type="text/x-red" data-help-name="hws-observer">
 </script>
@@ -22,6 +47,26 @@
             server: {
                 type: 'hws-server',
                 required: true
+            },
+            startup: {
+                value: true,
+                required: true,
+            },
+            toContext: {
+                value: false,
+                required: true,
+            },
+            context: {
+                value: 'global',
+                required: true
+            },
+            contextKeyActivity: {
+                value: 'activity',
+                required: true,
+            },
+            contextKeyAutomation: {
+                value: 'automation',
+                required: true,
             }
         },
         inputs: 1,
@@ -30,6 +75,18 @@
         label: function() {
             return this.name || 'Observer';
         },
-        paletteLabel: 'Observer'
+        paletteLabel: 'Observer',
+        oneditprepare: function() {
+
+            $('#node-input-toContext').on('change', function() {
+             
+                if(this.checked) {
+                    $('#node-input-context-group').show();
+                }
+                else {                    
+                    $('#node-input-context-group').hide();
+                }
+            });
+        }
     });
 </script>

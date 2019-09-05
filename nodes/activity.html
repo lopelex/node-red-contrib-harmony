@@ -60,7 +60,7 @@
             $('#node-input-config').click(function() {
                 $('#node-input-activity').empty();
                 $('#node-input-activity').attr('disabled', 'disabled')
-                $.get('harmonyws/config', {
+                $.get('hws/config', {
                         ip: config.ip
                     })
                     .done(function(data) {

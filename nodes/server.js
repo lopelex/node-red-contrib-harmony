@@ -1,3 +1,4 @@
+const events = require('events');
 const getHub = require('../lib/getHub');
 
 module.exports = (RED) => {
@@ -12,31 +13,30 @@ module.exports = (RED) => {
 
             node.debug = true;
             node.config = config;
+            node.events = new events.EventEmitter();
     
             node.hub = getHub(RED, node.config.ip);
 
             node.openListener = () => RED.log.info(`HarmonyWS use (${node.config.ip})`);
-            node.stateDigestListener = (digest) => node.events.emit('stateDigest', digest);
             node.closeListener = () => node.reconnect();
+            node.stateDigestListener = (digest) => node.emit('stateDigest', digest);
+            node.automationStateListener = (state) => node.emit('automationState', state);
 
             node.hub.on('open', node.openListener);
-            node.hub.on('stateDigest', node.stateDigestListener);
             node.hub.on('close', node.closeListener);
+            node.hub.on('stateDigest', node.stateDigestListener);
+            node.hub.on('automationState', node.automationStateListener);
    
             node.hub.getConfig()
+                .then(() => {
+                    node.emit('startup');
+                })
                 .catch(err => {
                     if (node.debug) console.error('Error: ' + err.message);
                 });
 
             node.reconnectInterval = () => setInterval(() => node.reconnect() , 60000);
-    
-            RED.events.on('nodes-started', () => {
-                node.emit('stateDigest', {
-                    activityId: node.hub.activityId,
-                    activityStatus: node.hub.activityStatus
-                });
-            });
-    
+     
             node.on('close', () => node.onClose());
         }
 
@@ -58,8 +58,10 @@ module.exports = (RED) => {
 
             if (node.hub) {
                 node.hub.off('open', node.openListener);
-                node.hub.off('stateDigest', node.stateDigestListener);
                 node.hub.off('close', node.closeListener);
+                node.hub.off('stateDigest', node.stateDigestListener);
+                node.hub.off('automationState', node.automationStateListener);
+
                 clearInterval(node.reconnectInterval);
             }
         }

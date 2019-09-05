@@ -20,15 +20,18 @@ module.exports = (RED) => {
 
                 if (msg.payload.activity) {
                     id = msg.payload.activity;
-                } else if (msg.activity) {
+                } 
+                else if (msg.activity) {
                     id = msg.activity;
                 }
+                else if (!node.toBoolean(msg.payload, true)) {
+                    id = '-1'; //poweroff
+                }
+                
                 if (!id) {
                     id = node.activity;
                 }
-                if (!node.toBoolean(msg.payload, true)) {
-                    id = '-1'; //poweroff
-                }
+
                 node.server.hub.startActivity(id)
                     .then(res => {
                         if (!res.code || res.code != 200) {
@@ -58,10 +61,7 @@ module.exports = (RED) => {
             }
             if (typeof value == 'string' || value instanceof String) {
                 value = value.trim().toLowerCase();
-                if (value === 'false' ||
-                value === '0' ||
-                value === 'off'
-                ) {
+                if (value === 'false' || value === '0' || value === 'off') {
                     return false;
                 }
             }
