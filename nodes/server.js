@@ -17,7 +17,7 @@ module.exports = (RED) => {
     
             node.hub = getHub(RED, node.config.ip);
 
-            node.openListener = () => RED.log.info(`HarmonyWS use (${node.config.ip})`);
+            node.openListener = () => RED.log.info(`HarmonyWS use (${node.config.ip} - ${node.config.name})`);
             node.closeListener = () => node.reconnect();
             node.stateDigestListener = (digest) => node.emit('stateDigest', digest);
             node.automationStateListener = (state) => node.emit('automationState', state);
@@ -32,7 +32,7 @@ module.exports = (RED) => {
                     node.emit('startup');
                 })
                 .catch(err => {
-                    if (node.debug) console.error('Error: ' + err.message);
+                    if (node.debug) console.error(err.message);
                 });
 
             node.reconnectInterval = () => setInterval(() => node.reconnect() , 60000);
@@ -47,7 +47,7 @@ module.exports = (RED) => {
             if (!node.hub.isConnected()) {
                 node.hub.reloadConfig()
                     .catch(err => {
-                        if (node.debug) console.error('Error: ' + err.message);
+                        if (node.debug) console.error(err.message);
                     });
             }
         }

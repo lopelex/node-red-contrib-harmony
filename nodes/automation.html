@@ -1,0 +1,128 @@
+<script type="text/x-red" data-template-name="hws-automation">
+    <div class="form-row">
+        <label for="node-input-server"><i class="fa fa-server"></i> Hub</label>
+        <input type="text" id="node-input-server">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-device"><i class="fa fa-lightbulb-o"></i> Device</label>
+        <select id="node-input-device"></select>
+    </div>
+    <div class="form-row node-text-editor-row">
+        <label for="node-input-json"><i class="fa fa-cog"></i> State</label>
+        <input type="hidden" id="node-input-json" autofocus="autofocus" value="">
+        <div style="height: 250px; min-height:150px;" class="node-text-editor" id="node-input-json-editor"></div>
+    </div>
+</script>
+<script type="text/x-red" data-help-name="hws-automation">
+</script>
+
+<script type="text/javascript">
+
+    RED.nodes.registerType('hws-automation', {
+        category: 'harmony',
+        color: '#a6bbcf',
+        defaults: {
+            name: {
+                value: ''
+            },
+            server: {
+                type: 'hws-server',
+                required: true
+            },
+            device: {
+                required: true
+            },
+            json: {
+                value: '',
+                required: true
+            }
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: 'feed.png',
+        label: function() {
+            return this.name || 'Automation';
+        },
+        paletteLabel: 'Automation',
+        oneditprepare: function() {
+
+            var server = $('#node-input-server').val();
+            var config = RED.nodes.node(server);
+            var that = this;
+
+            this.editor = RED.editor.createEditor({
+                id: 'node-input-json-editor',
+                mode: 'ace/mode/json',
+                value: $('#node-input-json').val()
+            });
+            this.editor.focus();
+            
+            if(config && config.ip) {
+                
+                $('#node-input-device').empty();
+
+                $.get('hws/automation', {
+                                ip: config.ip
+                            })
+                            .done(function(data) {
+                                that.data = JSON.parse(data);
+                                $.each(that.data, function(device){ 
+                                    $('#node-input-device').append($('<option>', {
+                                        value: device,
+                                        text: device
+                                    }));
+                                });
+                                $('#node-input-device').val(that.device).change();                        
+                            })
+                            .fail(function(err) {
+                            
+                            });
+            }
+
+            $('#node-input-device').on('change', function() {
+                console.log(that.editor.getValue());
+                if(!that.editor.getValue()) {
+                    try {
+                        var json = that.data[$('#node-input-device').val()];
+                        console.log(json);
+                        that.editor.setValue(JSON.stringify(json, null, 4));
+                    } catch (err) {
+                        
+                    }
+                }
+            });
+        },
+        oneditsave: function() {
+
+            var value = this.editor.getValue();
+            try {
+                var value = JSON.stringify(JSON.parse(value), null, 4);
+            } catch (err) {
+                
+            }
+            $('#node-input-json').val(value);
+            this.editor.destroy();
+            delete this.editor;
+        },
+        oneditcancel: function() {
+
+            this.editor.destroy();
+            delete this.editor;
+        },
+        oneditresize: function(size) {
+            var rows = $("#dialog-form>div:not(.node-text-editor-row)");
+            var height = $("#dialog-form").height();
+            for (var i=0; i<rows.size(); i++) {
+                height -= $(rows[i]).outerHeight(true);
+            }
+            var editorRow = $("#dialog-form>div.node-text-editor-row");
+            height -= (parseInt(editorRow.css("marginTop"))+parseInt(editorRow.css("marginBottom")));
+            $(".node-text-editor").css("height",height+"px");
+            this.editor.resize();
+        }
+    });
+</script>

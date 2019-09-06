@@ -36,7 +36,7 @@ module.exports = (RED) => {
                     action = node.server.hub.getAction(id || node.activity, command);
     
                 } catch (err) {
-                    if (node.server.debug) console.log('Error: ' + err.message);
+                    if (node.server.debug) console.log(err.message);
                 }
     
                 if (!action) {
@@ -45,7 +45,10 @@ module.exports = (RED) => {
                     });
                 } else {
                     node.server.hub.sendCommand(action, node.hold, node.repeat, node.delay)
-                        .then(() => {
+                        .then((res) => {
+                            if (!res.code || res.code != 200) {
+                                throw new Error('Unable to start activity.');
+                            }
                             node.send({
                                 payload: action
                             });
@@ -55,7 +58,7 @@ module.exports = (RED) => {
                                 payload: false,
                                 error: err.message
                             });
-                            if (node.server.debug) console.log('Error: ' + err.message);
+                            if (node.server.debug) console.log(err.message);
                         });
                 }
             });

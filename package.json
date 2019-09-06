@@ -30,7 +30,8 @@
       "hws-api": "lib/api.js",
       "hws-activity": "nodes/activity.js",
       "hws-command": "nodes/command.js",
-      "hws-observer": "nodes/observer.js"
+      "hws-observer": "nodes/observer.js",
+      "hws-automation": "nodes/automation.js"
     }
   },
   "author": {

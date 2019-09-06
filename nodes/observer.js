@@ -7,10 +7,10 @@ module.exports = (RED) => {
 
             RED.nodes.createNode(node, config);
 
-            this.config = config;
-            this.server = RED.nodes.getNode(this.config.server);
+            node.config = config;
+            node.server = RED.nodes.getNode(node.config.server);
 
-            if (!this.server) return;
+            if (!node.server) return;
 
             node.on('input', () => {
                 node.send({

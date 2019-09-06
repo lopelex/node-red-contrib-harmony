@@ -7,14 +7,14 @@ module.exports = (RED) => {
 
             RED.nodes.createNode(node, config);
 
-            this.config = config;
-            this.server = RED.nodes.getNode(this.config.server);
+            node.config = config;
+            node.server = RED.nodes.getNode(node.config.server);
 
-            if (!this.server) return;
+            if (!node.server) return;
 
-            this.activity = this.config.activity;
+            node.activity = node.config.activity;
             
-            this.on('input', msg => {
+            node.on('input', msg => {
     
                 let id;
 
@@ -49,7 +49,7 @@ module.exports = (RED) => {
                             payload: false,
                             error: err.message                            
                         });
-                        if (this.server.debug) console.log('Error: ' + err.message);
+                        if (node.server.debug) console.log(err.message);
                     });
             });
         }
