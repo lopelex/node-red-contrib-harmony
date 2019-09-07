@@ -1,17 +1,21 @@
 <script type="text/x-red" data-template-name="hws-server">
     <div class="form-row">
-      <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
-      <input type="text" id="node-config-input-name" />
-  </div>
-  <div class="form-row">
-      <label for="node-config-input-ip-select"><i class="fa fa-server"></i> Hubs</label>
-      <select id="node-config-input-ip-select" style="width: 60%;"></select>
-      <a id="node-config-input-select-trigger" class="editor-button"><i class="fa fa-search"></i></a>
-  </div>
-  <div class="form-row">
-    <label for="node-config-input-ip"><i class="fa fa-server"></i> IP</label>
-    <input type="text" id="node-config-input-ip" style="width: 60%;"/>
-  </div>
+        <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-config-input-name" />
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-ip-select"><i class="fa fa-server"></i> Hubs</label>
+        <select id="node-config-input-ip-select" style="width: 60%;"></select>
+        <a id="node-config-input-select-trigger" class="editor-button"><i class="fa fa-search"></i></a>
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-ip"><i class="fa fa-laptop"></i> IP</label>
+        <input type="text" id="node-config-input-ip" style="width: 60%;"/>
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-debug"><i class="fa fa-bug"></i> Debug</label>
+        <input type="checkbox" id="node-config-input-debug"/>
+    </div>
 </script>
 
 <script type="text/javascript">
@@ -26,6 +30,9 @@
                 value: "",
                 required: true
             },
+            debug: {
+                value: false
+            }
         },
         label: function() {
             return this.name ? this.name : "Harmony Hub";

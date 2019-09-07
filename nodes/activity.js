@@ -18,6 +18,9 @@ module.exports = (RED) => {
     
                 let id;
 
+                node.server.info(node, 'activity input');
+                node.server.info(node, msg);
+
                 if (msg.payload.activity) {
                     id = msg.payload.activity;
                 } 
@@ -49,7 +52,7 @@ module.exports = (RED) => {
                             payload: false,
                             error: err.message                            
                         });
-                        if (node.server.debug) console.log(err.message);
+                        node.server.error(node, err.message);
                     });
             });
         }

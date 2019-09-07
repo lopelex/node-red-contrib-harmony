@@ -13,6 +13,7 @@
     </div>
     <div class="form-row node-text-editor-row">
         <label for="node-input-json"><i class="fa fa-cog"></i> State</label>
+        <button id="node-input-json-state" class="red-ui-button">Get current state</button>
         <input type="hidden" id="node-input-json" autofocus="autofocus" value="">
         <div style="height: 250px; min-height:150px;" class="node-text-editor" id="node-input-json-editor"></div>
     </div>
@@ -62,9 +63,35 @@
             this.editor.focus();
             
             if(config && config.ip) {
-                
-                $('#node-input-device').empty();
+                getStates(that.device);
+            }
 
+            $('#node-input-device').on('change', function() {
+                if(!that.editor.getValue()) {
+                    try {
+                        var json = that.data[$('#node-input-device').val()];
+                        that.editor.setValue(JSON.stringify(json, null, 4));
+                    } catch (err) {
+                        
+                    }
+                }
+            });
+
+            $('#node-input-json-state').on('click', function() {
+                try {
+                    if(config && config.ip) {
+                        getStates($('#node-input-device').val(), function () {
+                            var json = that.data[$('#node-input-device').val()];
+                            that.editor.setValue(JSON.stringify(json, null, 4));
+                        });
+                    }
+                } catch (err) {
+                    
+                }
+            });
+
+            function getStates(selected, callback) {
+                $('#node-input-device').empty();
                 $.get('hws/automation', {
                                 ip: config.ip
                             })
@@ -76,25 +103,15 @@
                                         text: device
                                     }));
                                 });
-                                $('#node-input-device').val(that.device).change();                        
+                                $('#node-input-device').val(selected).change();
+                                if(callback) {
+                                    callback();
+                                }                      
                             })
                             .fail(function(err) {
                             
                             });
             }
-
-            $('#node-input-device').on('change', function() {
-                console.log(that.editor.getValue());
-                if(!that.editor.getValue()) {
-                    try {
-                        var json = that.data[$('#node-input-device').val()];
-                        console.log(json);
-                        that.editor.setValue(JSON.stringify(json, null, 4));
-                    } catch (err) {
-                        
-                    }
-                }
-            });
         },
         oneditsave: function() {
 

@@ -19,9 +19,12 @@ module.exports = (RED) => {
             node.repeat = Number.parseInt(node.config.repeat) || 1;
             node.delay = Number.parseInt(node.config.delay) || 0;
     
-            node.on('input', msg => {
+            node.on('input', (msg) => {
     
                 let action;
+
+                node.server.info(node, 'command input');
+                node.server.info(node, msg);
 
                 try {
     
@@ -36,7 +39,7 @@ module.exports = (RED) => {
                     action = node.server.hub.getAction(id || node.activity, command);
     
                 } catch (err) {
-                    if (node.server.debug) console.log(err.message);
+                    node.server.error(node, err.message);
                 }
     
                 if (!action) {
@@ -45,9 +48,9 @@ module.exports = (RED) => {
                     });
                 } else {
                     node.server.hub.sendCommand(action, node.hold, node.repeat, node.delay)
-                        .then((res) => {
+                        .then(res => {
                             if (!res.code || res.code != 200) {
-                                throw new Error('Unable to start activity.');
+                                throw new Error('Unable to send command.');
                             }
                             node.send({
                                 payload: action
@@ -58,7 +61,7 @@ module.exports = (RED) => {
                                 payload: false,
                                 error: err.message
                             });
-                            if (node.server.debug) console.log(err.message);
+                            node.server.error(node, err.message);
                         });
                 }
             });
