@@ -26,12 +26,12 @@
   ],
   "node-red": {
     "nodes": {
-      "hws-server": "nodes/server.js",
-      "hws-api": "lib/api.js",
-      "hws-activity": "nodes/activity.js",
-      "hws-command": "nodes/command.js",
-      "hws-observer": "nodes/observer.js",
-      "hws-automation": "nodes/automation.js"
+      "harmonyws-server": "nodes/server.js",
+      "harmonyws-api": "lib/api.js",
+      "harmonyws-activity": "nodes/activity.js",
+      "harmonyws-command": "nodes/command.js",
+      "harmonyws-observer": "nodes/observer.js",
+      "harmonyws-automation": "nodes/automation.js"
     }
   },
   "author": {

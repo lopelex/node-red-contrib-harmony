@@ -1,14 +1,14 @@
-<script type="text/x-red" data-template-name="hws-activity">
+<script type="text/x-red" data-template-name="harmonyws-activity">
     <div class="form-row">
         <label for="node-input-server"><i class="fa fa-server"></i> Hub</label>
         <input type="text" id="node-input-server">
     </div>
-    <div class="form-row" style="text-align: right;">
-        <a id="node-input-config" class="editor-button"><i class="fa fa-refresh"></i></a>
-    </div>
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row" style="text-align: right;">
+        <a id="node-input-config" class="editor-button"><i class="fa fa-refresh"></i></a>
     </div>
     <div class="form-row">
         <label for="node-input-activity"><i class="fa fa-television"></i> Activity</label>
@@ -17,11 +17,11 @@
         </div>
     </div>
 </script>
-<script type="text/x-red" data-help-name="hws-activity">
+<script type="text/x-red" data-help-name="harmonyws-activity">
 </script>
 
 <script type="text/javascript">
-    RED.nodes.registerType('hws-activity', {
+    RED.nodes.registerType('harmonyws-activity', {
 
         category: 'harmony',
         color: '#a6bbcf',
@@ -30,7 +30,7 @@
                 value: ''
             },
             server: {
-                type: 'hws-server',
+                type: 'harmonyws-server',
                 required: true
             },
             activity: {

@@ -77,5 +77,5 @@ module.exports = (RED) => {
         }
     }
 
-    RED.nodes.registerType('hws-activity', Node);
+    RED.nodes.registerType('harmonyws-activity', Node);
 };

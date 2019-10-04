@@ -44,5 +44,5 @@ module.exports = (RED) => {
         }
     }
 
-    RED.nodes.registerType('hws-automation', Node);
+    RED.nodes.registerType('harmonyws-automation', Node);
 };

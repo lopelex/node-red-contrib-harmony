@@ -87,5 +87,5 @@ module.exports = (RED) => {
         }
     }
 
-    RED.nodes.registerType('hws-observer', Node);
+    RED.nodes.registerType('harmonyws-observer', Node);
 };

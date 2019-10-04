@@ -68,5 +68,5 @@ module.exports = (RED) => {
         }
     }
 
-    RED.nodes.registerType('hws-command', Node);
+    RED.nodes.registerType('harmonyws-command', Node);
 };

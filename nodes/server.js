@@ -90,15 +90,15 @@ module.exports = (RED) => {
         info(source, msg) {
 
             this.sendDebug('info', source, msg);
-            if (this.debug) RED.log.info(`HarmonyWS ${msg}`);
+            if (this.debug) RED.log.info(msg);
         }
 
         error(source, msg) {
 
             this.sendDebug('error', source, msg);
-            if (this.debug) RED.log.error(`HarmonyWS ${msg}`);
+            // if (this.debug) RED.log.error(msg);
         }
     }
 
-    RED.nodes.registerType('hws-server', Node);
+    RED.nodes.registerType('harmonyws-server', Node);
 };

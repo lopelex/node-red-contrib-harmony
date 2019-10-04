@@ -1,4 +1,4 @@
-<script type="text/x-red" data-template-name="hws-automation">
+<script type="text/x-red" data-template-name="harmonyws-automation">
     <div class="form-row">
         <label for="node-input-server"><i class="fa fa-server"></i> Hub</label>
         <input type="text" id="node-input-server">
@@ -6,6 +6,9 @@
     <div class="form-row">
         <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row" style="text-align: right;">
+        <a id="node-input-config" class="editor-button"><i class="fa fa-refresh"></i></a>
     </div>
     <div class="form-row">
         <label for="node-input-device"><i class="fa fa-lightbulb-o"></i> Device</label>
@@ -18,12 +21,12 @@
         <div style="height: 250px; min-height:150px;" class="node-text-editor" id="node-input-json-editor"></div>
     </div>
 </script>
-<script type="text/x-red" data-help-name="hws-automation">
+<script type="text/x-red" data-help-name="harmonyws-automation">
 </script>
 
 <script type="text/javascript">
 
-    RED.nodes.registerType('hws-automation', {
+    RED.nodes.registerType('harmonyws-automation', {
         category: 'harmony',
         color: '#a6bbcf',
         defaults: {
@@ -31,7 +34,7 @@
                 value: ''
             },
             server: {
-                type: 'hws-server',
+                type: 'harmonyws-server',
                 required: true
             },
             device: {
@@ -65,6 +68,24 @@
             if(config && config.ip) {
                 getStates(that.device);
             }
+
+            $('#node-input-config').click(function() {
+
+                $('#node-input-activity').empty();
+                $('#node-input-activity').attr('disabled', 'disabled');
+                $('#node-input-command').empty();
+                $('#node-input-command').attr('disabled', 'disabled');
+
+                $.get('hws/config', {
+                        ip: config.ip
+                    })
+                    .done(function(data) {
+                        loadActivitiesAndDevices(node.activity);
+                    })
+                    .fail(function(err) {
+                        RED.notify(err.responseText, 'error')
+                    });
+            });
 
             $('#node-input-device').on('change', function() {
                 if(!that.editor.getValue()) {
