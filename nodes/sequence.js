@@ -30,13 +30,13 @@ module.exports = (RED) => {
                 switch (value.type) {
 
                     case 'command':
-
+                    {
                         let [id, command] = decodeURI(value.command).split(':');
                         let action = node.server.hub.getAction(id, command);
 
-                        return accu.then((value) => new Promise((resolve, reject) =>
+                        return accu.then(() => new Promise((resolve, reject) =>
                             node.server.hub.sendCommand(action, 0, 1, 0)
-                                .then((res) => {
+                                .then(() => {
                                     node.send({
                                         payload: action
                                     });
@@ -44,21 +44,21 @@ module.exports = (RED) => {
                                 })
                                 .catch(err => reject(err))
                         ));
-
-                        break;
+                    }
 
                     case 'delay':
-
+                    {
                         let delay = value.delay;
 
-                        return accu.then((value) => new Promise((resolve, reject) => {
+                        return accu.then(() => new Promise((resolve) => {
                             node.send({
                                 payload: 'delay: ' + delay
                             });
                             setTimeout(() => resolve(), delay);
                         }));
-                        break;
+                    }
                     default:
+                        return false;
                 }
             }
             , Promise.resolve());
