@@ -247,13 +247,12 @@
                         var cmd = JSON.parse(value.action);
                         var action = encodeURI(cmd.deviceId + ':' + cmd.command);
                         command.append($('<option/>').val(action).text(value.label));
+                        command.val(valueC);
                     });
                 } else {
-                    command.append($('<option/>').val('').text('No commands found.'));
+                    command.append($('<option/>').val('').text('No commands found.').attr('selected', 'selected'));
                     command.val('');
                 }
-
-                command.val(valueC);
             }
 
             function updateDelayField(delay, value) {

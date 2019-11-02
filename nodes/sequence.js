@@ -24,6 +24,10 @@ module.exports = (RED) => {
         sequence() {
 
             let node = this;
+            let seq = node.config.sequence;
+            seq.push({
+                type: 'done'
+            });
 
             node.config.sequence.reduce((accu, value) => {
 
@@ -55,6 +59,16 @@ module.exports = (RED) => {
                                 payload: 'delay: ' + delay
                             });
                             setTimeout(() => resolve(), delay);
+                        }));
+                    }
+
+                    case 'done':
+                    {
+                        return accu.then(() => new Promise((resolve) => {
+                            node.send({
+                                payload: 'done'
+                            });
+                            resolve();
                         }));
                     }
                     default:
