@@ -1,0 +1,312 @@
+<script type="text/x-red" data-template-name="harmonyws-sequence">
+    <div class="form-row">
+        <label for="node-input-server"><i class="fa fa-server"></i> Hub</label>
+        <input type="text" id="node-input-server">
+    </div>
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Name">
+    </div>
+    <div class="form-row" style="margin-bottom:0;">
+        <label><i class="fa fa-list"></i> Sequence</label>
+    </div>
+    <div class="form-row node-input-sequence-container-row">
+        <ol id="node-input-sequence-container" style="overflow:hidden; whiteSpace:nowrap;"></ol>
+    </div>
+</script>
+<script type="text/x-red" data-help-name="harmonyws-sequence">
+</script>
+
+<script type="text/javascript">
+    RED.nodes.registerType('harmonyws-sequence', {
+        category: 'harmony',
+        color: '#a6bbcf',
+        defaults: {
+            name: {
+                value: ''
+            },
+            server: {
+                type: 'harmonyws-server',
+                required: true
+            },
+            sequence: {
+                value: []
+            }
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: 'feed.png',
+        label: function() {
+            return this.name || 'Sequence';
+        },
+        paletteLabel: 'Sequence',
+        oneditprepare: function() {
+
+            var node = this;
+
+            var server = $('#node-input-server').val();
+            var config = RED.nodes.node(server);
+
+            $('#node-input-sequence-container').editableList({
+                addItem: function(container, index, opt) {
+
+                    var row1 = $('<div/>').appendTo(container);
+
+                    var select = $('<select/>', {
+                        class: 'node-input-sequence-type',
+                        style: 'width:110px; margin-right:10px;'
+                    }).appendTo(row1);
+
+                    var options = [{
+                            type: 'command',
+                            text: 'Command'
+                        },
+                        {
+                            type: 'delay',
+                            text: 'Delay'
+                        }
+                    ];
+
+                    $.each(options, function(index, value) {
+                        select.append($('<option/>').val(value.type).text(value.text));
+                    });
+
+                    var row2 = $('<div/>').appendTo(container);
+
+                    if (!opt.hasOwnProperty('type')) {
+                        opt = {
+                            type: 'command',
+                            activity: '',
+                            command: '',
+                            delay: 200
+                        };
+                    }
+
+                    select.on('change', function() {
+
+                        switch ($(this).val()) {
+
+                            case 'command':
+                                createCommandField(opt);
+                                break;
+
+                            case 'delay':
+                                createDelayField(opt);
+                                break;
+                            default:
+                        }
+                    });
+
+                    select.val(opt.type).change();
+
+                    updateList();
+
+                    function createCommandField(opt) {
+
+                        row2.empty();
+
+                        var block1 = $('<div/>', {
+                            style: 'margin-top:4px; clear:both;'
+                        }).appendTo(row2);
+
+                        $('<div/>', {
+                                style: 'display:inline-block; text-align:right; width:120px; padding-right:10px; box-sizing:border-box;'
+                            })
+                            .text('Activity')
+                            .appendTo(block1);
+
+                        var activity = $('<select/>', {
+                                class: 'node-input-sequence-activity',
+                                style: 'width: 250px;'
+                            })
+                            .attr('init', opt.activity)
+                            .appendTo(block1);
+
+                        var block2 = $('<div/>', {
+                            style: 'margin-top:4px; clear:both;'
+                        }).appendTo(row2);
+
+                        $('<div/>', {
+                                style: 'display:inline-block; text-align:right; width:120px; padding-right:10px; box-sizing:border-box;'
+                            })
+                            .text('Command')
+                            .appendTo(block2);
+
+                        var command = $('<select/>', {
+                                class: 'node-input-sequence-command',
+                                style: 'width: 250px;'
+                            })
+                            .attr('init', opt.command)
+                            .appendTo(block2);
+                    }
+
+                    function createDelayField(opt) {
+
+                        row2.empty();
+
+                        var block = $('<div/>', {
+                            style: 'margin-top:4px; clear:both;'
+                        }).appendTo(row2);
+
+                        $('<div/>', {
+                                style: 'display:inline-block; text-align:right; width:120px; padding-right:10px; box-sizing:border-box;'
+                            })
+                            .text('Delay(ms)')
+                            .appendTo(block);
+
+                        var delay = $('<input/>', {
+                                class: 'node-input-sequence-delay',
+                                type: 'text',
+                                style: 'width: 250px;'
+                            })
+                            .attr('init', opt.delay)
+                            .appendTo(block);
+                    }
+                },
+                removeItem: function(data) {
+                    updateList();
+                },
+                sortItems: function(items) {
+                    updateList();
+                },
+                resizeItem: function(item) {
+                    var newWidth = item.width();
+                    item.find('.red-ui-typedInput').typedInput('width', newWidth - 130);
+                },
+                removable: true,
+                sortable: true
+            });
+
+
+            $('#node-input-server').on('change', function() {
+                config = RED.nodes.node(this.value);
+                loadData(function() {
+                    updateList(true);
+                });
+            });
+
+            $.each(node.sequence, function(index, value) {
+                $('#node-input-sequence-container').editableList('addItem', value);
+            });
+
+            function updateList(useInit) {
+                var items = $('#node-input-sequence-container').editableList('items');
+                items.each(function(i) {
+                    var type = $(this).find('.node-input-sequence-type').val();
+
+                    switch (type) {
+
+                        case 'command':
+
+                            var activity = $(this).find('.node-input-sequence-activity');
+                            var command = $(this).find('.node-input-sequence-command');
+                            activity.off('change');
+                            if(useInit) {
+                                updateCommandField(activity, activity.attr('init'), command, command.attr('init'));
+                            }
+                            else {
+                                updateCommandField(activity, activity.val(), command, command.val());
+                            }
+                            activity.on('change', function() {
+                                updateList();
+                            });
+                            break;
+
+                        case 'delay':
+
+                            var delay = $(this).find('.node-input-sequence-delay');
+                            if(useInit) {
+                                updateDelayField(delay, delay.attr('init'));
+                            }
+                            else {
+                                updateDelayField(delay, delay.val());
+                            }
+                            break;
+                        default:
+                    }
+                });
+            }
+
+            function updateCommandField(activity, valueA, command, valueC) {
+                activity.empty();
+                command.empty();
+                $.each(node.data, function(index, value) {
+                    if (value.id > 0) {
+                        activity.append($('<option/>').val(value.id).text(value.label + ' (' + value.id + ')'));
+                    }
+                });
+
+                activity.val(valueA);
+
+                var act = $.grep(node.data, function(obj) {
+                    return obj.id === valueA;
+                }).pop();
+
+                if(act && act.commands && act.commands.length > 0) {
+                    $.each(act.commands, function(index, value) {
+                        var cmd = JSON.parse(value.action);
+                        var action = encodeURI(cmd.deviceId + ':' + cmd.command);
+                        command.append($('<option/>').val(action).text(value.label));
+                    });
+                } else {
+                    command.append($('<option/>').val('').text('No commands found.'));
+                    command.val('');
+                }
+
+                command.val(valueC);
+            }
+
+            function updateDelayField(delay, value) {
+                delay.val(value);
+            }
+
+            function loadData(callback) {
+
+                if (config && config.ip) {
+
+                    node.data = [];
+                    $.get('hws/activitiesAndDevices', {
+                            ip: config.ip
+                        })
+                        .done(function(data) {
+                            var items = JSON.parse(data);
+                            if (!items || items.length <= 0) {
+                                RED.notify('No data found.', 'error');
+                            } else {
+                                node.data = items;
+                                callback();
+                            }
+                        })
+                        .fail(function(err) {
+                            RED.notify(err.responseText, 'error')
+                        });
+                }
+            }
+        },
+        oneditsave: function() {
+            var items = $('#node-input-sequence-container').editableList('items');
+            var node = this;
+            node.sequence = [];
+            items.each(function(i) {
+                var obj = {
+                    type: $(this).find('.node-input-sequence-type').val(),
+                    activity: $(this).find('.node-input-sequence-activity').val(),
+                    command: $(this).find('.node-input-sequence-command').val(),
+                    delay: $(this).find('.node-input-sequence-delay').val()
+                };
+                node.sequence.push(obj);
+            });
+        },
+        oneditresize: function(size) {
+            var rows = $('#dialog-form>div:not(.node-input-sequence-container-row)');
+            var height = size.height;
+            for (var i = 0; i < rows.length; i++) {
+                height -= $(rows[i]).outerHeight(true);
+            }
+            var editorRow = $('#dialog-form>div.node-input-sequence-container-row');
+            height -= (parseInt(editorRow.css('marginTop')) + parseInt(editorRow.css('marginBottom')));
+
+            $('#node-input-sequence-container').editableList('height', height);
+        }
+    });
+</script>

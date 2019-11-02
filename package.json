@@ -4,15 +4,16 @@
   "description": "Harmony Hub Websocket Integration for Node-RED",
   "license": "MIT",
   "dependencies": {
-    "npm": "^6.9.0",
+    "eslint": "^6.6.0",
     "harmony-websocket": "^1.3.0",
+    "is-port-reachable": "^2.0.1",
+    "node-ssdp": "^4.0.0",
+    "node-upnp": "^1.1.1",
+    "npm": "^6.9.0",
     "request": "^2.65.0",
     "request-promise": "^4.2.4",
     "websocket": "^1.0.28",
-    "websocket-as-promised": "^0.9.0",
-    "node-ssdp": "^4.0.0",
-    "node-upnp": "^1.1.1",
-    "is-port-reachable": "^2.0.1"
+    "websocket-as-promised": "^0.9.0"
   },
   "repository": {
     "type": "git",
@@ -31,7 +32,8 @@
       "harmonyws-activity": "nodes/activity.js",
       "harmonyws-command": "nodes/command.js",
       "harmonyws-observer": "nodes/observer.js",
-      "harmonyws-automation": "nodes/automation.js"
+      "harmonyws-automation": "nodes/automation.js",
+      "harmonyws-sequence": "nodes/sequence.js"
     }
   },
   "author": {

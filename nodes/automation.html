@@ -64,28 +64,10 @@
                 value: $('#node-input-json').val()
             });
             this.editor.focus();
-            
+
             if(config && config.ip) {
                 getStates(that.device);
             }
-
-            $('#node-input-config').click(function() {
-
-                $('#node-input-activity').empty();
-                $('#node-input-activity').attr('disabled', 'disabled');
-                $('#node-input-command').empty();
-                $('#node-input-command').attr('disabled', 'disabled');
-
-                $.get('hws/config', {
-                        ip: config.ip
-                    })
-                    .done(function(data) {
-                        loadActivitiesAndDevices(node.activity);
-                    })
-                    .fail(function(err) {
-                        RED.notify(err.responseText, 'error')
-                    });
-            });
 
             $('#node-input-device').on('change', function() {
                 if(!that.editor.getValue()) {
@@ -93,7 +75,7 @@
                         var json = that.data[$('#node-input-device').val()];
                         that.editor.setValue(JSON.stringify(json, null, 4));
                     } catch (err) {
-                        
+
                     }
                 }
             });
@@ -107,7 +89,7 @@
                         });
                     }
                 } catch (err) {
-                    
+
                 }
             });
 
@@ -118,8 +100,8 @@
                             })
                             .done(function(data) {
                                 that.data = JSON.parse(data);
-                                $.each(that.data, function(device){ 
-                                    $('#node-input-device').append($('<option>', {
+                                $.each(that.data, function(device){
+                                    $('#node-input-device').append($('<option/>', {
                                         value: device,
                                         text: device
                                     }));
@@ -127,10 +109,10 @@
                                 $('#node-input-device').val(selected).change();
                                 if(callback) {
                                     callback();
-                                }                      
+                                }
                             })
                             .fail(function(err) {
-                            
+
                             });
             }
         },
@@ -140,7 +122,7 @@
             try {
                 var value = JSON.stringify(JSON.parse(value), null, 4);
             } catch (err) {
-                
+
             }
             $('#node-input-json').val(value);
             this.editor.destroy();
