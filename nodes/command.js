@@ -32,10 +32,14 @@ module.exports = (RED) => {
 
                     if (msg.payload.command) {
                         command = msg.payload.command;
-                        id = msg.payload.deviceId;
+                        if(msg.payload.deviceId) {
+                            id = msg.payload.deviceId;
+                        }
                     } else if (msg.command) {
                         command = msg.command;
-                        id = msg.deviceId;
+                        if(msg.deviceId) {
+                            id = msg.deviceId;
+                        }
                     }
 
                     if(!id) {
