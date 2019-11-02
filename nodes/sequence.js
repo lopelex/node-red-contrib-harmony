@@ -51,14 +51,12 @@ module.exports = (RED) => {
 
                         let delay = value.delay;
 
-                        return accu.then((value) => new Promise((resolve, reject) =>
-                            setTimeout(() => {
-                                node.send({
-                                    payload: 'delay: ' + delay
-                                });
-                                resolve();
-                            }, delay)
-                        ));
+                        return accu.then((value) => new Promise((resolve, reject) => {
+                            node.send({
+                                payload: 'delay: ' + delay
+                            });
+                            setTimeout(() => resolve(), delay);
+                        }));
                         break;
                     default:
                 }

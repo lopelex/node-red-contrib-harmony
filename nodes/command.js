@@ -18,30 +18,36 @@ module.exports = (RED) => {
             node.hold = Number.parseInt(node.config.hold) || 0;
             node.repeat = Number.parseInt(node.config.repeat) || 1;
             node.delay = Number.parseInt(node.config.delay) || 0;
-    
+
             node.on('input', (msg) => {
-    
+
                 let action;
 
                 node.server.info(node, 'command input');
                 node.server.info(node, msg);
 
                 try {
-    
+
                     let [id, command] = decodeURI(node.command).split(':');
-    
+
                     if (msg.payload.command) {
                         command = msg.payload.command;
+                        id = msg.payload.deviceId;
                     } else if (msg.command) {
                         command = msg.command;
+                        id = msg.deviceId;
                     }
-    
-                    action = node.server.hub.getAction(id || node.activity, command);
-    
+
+                    if(!id) {
+                        id = node.activity;
+                    }
+
+                    action = node.server.hub.getAction(id, command);
+
                 } catch (err) {
                     node.server.error(node, err.message);
                 }
-    
+
                 if (!action) {
                     node.send({
                         payload: false
