@@ -9,7 +9,6 @@ module.exports = (RED) => {
             RED.nodes.createNode(this, config);
 
             this.config = config;
-            this.debug = config.debug;
 
             this.hub = getHub(RED, this.config.ip);
 
@@ -62,7 +61,7 @@ module.exports = (RED) => {
 
         sendDebug(level, source, msg) {
 
-            if (!this.debug) return;
+            if (!this.config.debug) return;
 
             let data = {
                 id: source.id,
@@ -81,7 +80,7 @@ module.exports = (RED) => {
         info(source, msg) {
 
             this.sendDebug('info', source, msg);
-            if (this.debug) RED.log.info(msg);
+            if (this.config.debug) RED.log.info(msg);
         }
 
         error(source, msg) {
