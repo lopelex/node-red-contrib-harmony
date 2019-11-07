@@ -1,46 +1,43 @@
+const NodeClass = require('../lib/nodeClass');
+const toBoolean = require('../lib/toBoolean');
+
 module.exports = (RED) => {
 
-    class Node {
+    class Node extends NodeClass {
+
         constructor(config) {
+            super(config, RED);
+        }
 
-            let node = this;
+        init() {
 
-            RED.nodes.createNode(node, config);
+            this.on('input', msg => {
 
-            node.config = config;
-            node.server = RED.nodes.getNode(node.config.server);
+                this.server.info(this, 'activity input');
+                this.server.info(this, msg);
 
-            if (!node.server) return;
-
-            node.activity = node.config.activity;
-            
-            node.on('input', msg => {
-    
                 let id;
-
-                node.server.info(node, 'activity input');
-                node.server.info(node, msg);
 
                 if (msg.payload.activity) {
                     id = msg.payload.activity;
-                } 
+                }
                 else if (msg.activity) {
                     id = msg.activity;
                 }
-                else if (!node.toBoolean(msg.payload, true)) {
+                else if (!this.toBoolean(msg.payload, true)) {
                     id = '-1'; //poweroff
                 }
-                
+
                 if (!id) {
-                    id = node.activity;
+                    id = this.config.activity;
                 }
 
-                node.server.hub.startActivity(id)
+                this.server.hub.startActivity(id)
                     .then(res => {
                         if (!res.code || res.code != 200) {
                             throw new Error('Unable to start activity.');
                         }
-                        node.send({
+                        this.send({
                             payload: {
                                 activity: id
                             },
@@ -48,32 +45,13 @@ module.exports = (RED) => {
                         });
                     })
                     .catch(err => {
-                        node.send({
+                        this.send({
                             payload: false,
-                            error: err.message                            
+                            error: err.message
                         });
-                        node.server.error(node, err.message);
+                        this.server.error(this, err.message);
                     });
             });
-        }
-    
-        toBoolean(value, defaultValue) {
-
-            if (typeof value == 'boolean' || value instanceof Boolean) {
-                return value;
-            }
-            if (typeof value == 'string' || value instanceof String) {
-                value = value.trim().toLowerCase();
-                if (value === 'false' || value === '0' || value === 'off') {
-                    return false;
-                }
-            }
-            if (typeof value == 'number' || value instanceof Number) {
-                if (value === 0) {
-                    return false;
-                }
-            }
-            return defaultValue;
         }
     }
 

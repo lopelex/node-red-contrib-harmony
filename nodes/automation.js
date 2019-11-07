@@ -1,46 +1,44 @@
+const NodeClass = require('../lib/nodeClass');
+
 module.exports = (RED) => {
 
-    class Node {
+    class Node extends NodeClass {
+
         constructor(config) {
+            super(config, RED);
+        }
 
-            let node = this;
+        init() {
 
-            RED.nodes.createNode(node, config);
+            this.on('input', msg => {
 
-            node.config = config;
-            node.server = RED.nodes.getNode(node.config.server);
+                this.server.info(this, 'automation input');
+                this.server.info(this, msg);
 
-            if (!node.server) return;
-
-            node.on('input', msg => {               
-
-                node.server.info(node, 'automation input');
-                node.server.info(node, msg);
-
-                try {    
+                try {
                     let action = {};
-                    action[node.config.device] = JSON.parse(node.config.json);
+                    action[this.config.device] = JSON.parse(this.config.json);
 
-                    node.server.hub.sendAutomationCommand(action)
+                    this.server.hub.sendAutomationCommand(action)
                         .then(res => {
                             if (!res.code || res.code != 200) {
                                 throw new Error('Unable to send automation command.');
                             }
-                            node.send({
+                            this.send({
                                 payload: true
                             });
-                        })                        
+                        })
                         .catch(err => {
-                            node.send({
+                            this.send({
                                 payload: false,
                                 error: err.message
                             });
-                            node.server.error(node, err.message);
-                        });    
+                            this.server.error(this, err.message);
+                        });
                 } catch (err) {
-                    node.server.error(node, err.message);
+                    this.server.error(this, err.message);
                 }
-            }); 
+            });
         }
     }
 

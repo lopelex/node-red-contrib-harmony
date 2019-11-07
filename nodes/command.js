@@ -1,34 +1,25 @@
+const NodeClass = require('../lib/nodeClass');
+
 module.exports = (RED) => {
 
-    class Node {
+    class Node extends NodeClass {
+
         constructor(config) {
+            super(config, RED);
+        }
 
-            let node = this;
+        init() {
 
-            RED.nodes.createNode(node, config);
+            this.on('input', (msg) => {
 
-            node.config = config;
-            node.server = RED.nodes.getNode(node.config.server);
-
-            if (!node.server) return;
-
-            node.activity = node.config.activity;
-            node.label = node.config.label;
-            node.command = node.config.command;
-            node.hold = Number.parseInt(node.config.hold) || 0;
-            node.repeat = Number.parseInt(node.config.repeat) || 1;
-            node.delay = Number.parseInt(node.config.delay) || 0;
-
-            node.on('input', (msg) => {
+                this.server.info(this, 'command input');
+                this.server.info(this, msg);
 
                 let action;
 
-                node.server.info(node, 'command input');
-                node.server.info(node, msg);
-
                 try {
 
-                    let [id, command] = decodeURI(node.command).split(':');
+                    let [id, command] = decodeURI(this.config.command).split(':');
 
                     if (msg.payload.command) {
                         command = msg.payload.command;
@@ -43,35 +34,39 @@ module.exports = (RED) => {
                     }
 
                     if(!id) {
-                        id = node.activity;
+                        id = this.config.activity;
                     }
 
-                    action = node.server.hub.getAction(id, command);
+                    action = this.server.hub.getAction(id, command);
 
                 } catch (err) {
-                    node.server.error(node, err.message);
+                    this.server.error(this, err.message);
                 }
 
                 if (!action) {
-                    node.send({
+                    this.send({
                         payload: false
                     });
                 } else {
-                    node.server.hub.sendCommand(action, node.hold, node.repeat, node.delay)
+                    let hold = parseInt(this.config.hold);
+                    let repeat = parseInt(this.config.repeat);
+                    let delay = parseInt(this.config.delay);
+
+                    this.server.hub.sendCommand(action, hold, repeat, delay)
                         .then(res => {
                             if (!res.code || res.code != 200) {
                                 throw new Error('Unable to send command.');
                             }
-                            node.send({
+                            this.send({
                                 payload: action
                             });
                         })
                         .catch(err => {
-                            node.send({
+                            this.send({
                                 payload: false,
                                 error: err.message
                             });
-                            node.server.error(node, err.message);
+                            this.server.error(this, err.message);
                         });
                 }
             });

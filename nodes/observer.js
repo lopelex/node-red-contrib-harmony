@@ -1,47 +1,46 @@
+const NodeClass = require('../lib/nodeClass');
+
 module.exports = (RED) => {
 
-    class Node {
+    class Node extends NodeClass {
+
         constructor(config) {
+            super(config, RED);
+        }
 
-            let node = this;
+        init() {
 
-            RED.nodes.createNode(node, config);
-
-            node.config = config;
-            node.server = RED.nodes.getNode(node.config.server);
-
-            if (!node.server) return;
-
-            node.on('input', () => {
-                node.send({
+            this.on('input', () => {
+                
+                this.send({
                     payload: {
-                        activity: node.server.hub.activityId,
-                        status: node.server.hub.activityStatus
+                        activity: this.server.hub.activityId,
+                        status: this.server.hub.activityStatus
                     },
-                    activity: node.server.hub.activityId,
-                    status: node.server.hub.activityStatus
+                    activity: this.server.hub.activityId,
+                    status: this.server.hub.activityStatus
                 });
-                node.writeToContext();
+                this.writeToContext();
             });
 
-            node.startupListener = (state) => {
-                if(node.config.startup) {
-                    node.send({
+            this.startupListener = (state) => {
+                if(this.config.startup) {
+                    this.send({
                         payload: {
-                            activity: node.server.hub.activityId,
-                            status: node.server.hub.activityStatus,
-                            automation: node.server.hub.automationState
+                            activity: this.server.hub.activityId,
+                            status: this.server.hub.activityStatus,
+                            automation: this.server.hub.automationState
                         },
-                        activity: node.server.hub.activityId,
-                        status: node.server.hub.activityStatus,
-                        automation: node.server.hub.automationState
+                        activity: this.server.hub.activityId,
+                        status: this.server.hub.activityStatus,
+                        automation: this.server.hub.automationState
                     });
-                    node.writeToContext();
+                    this.writeToContext();
                 }
             };
 
-            node.stateDigestListener = (digest) => {
-                node.send({
+            this.stateDigestListener = (digest) => {
+                this.send({
                     payload: {
                         activity: digest.activityId,
                         status: digest.activityStatus
@@ -49,51 +48,47 @@ module.exports = (RED) => {
                     activity: digest.activityId,
                     status: digest.activityStatus
                 });
-                node.writeToContext();
+                this.writeToContext();
             };
 
-            node.automationStateListener = (state) => {
-                node.send({
+            this.automationStateListener = (state) => {
+                this.send({
                     payload: {
                         automationState: state
                     },
                     automationState: state
                 });
-                node.writeToContext(state);
+                this.writeToContext(state);
             };
 
-            node.server.on('startup', node.startupListener);
-            node.server.on('stateDigest', node.stateDigestListener);
-            node.server.on('automationState', node.automationStateListener);
+            this.server.on('startup', this.startupListener);
+            this.server.on('stateDigest', this.stateDigestListener);
+            this.server.on('automationState', this.automationStateListener);
 
-            node.on('close', () => node.onClose());
+            this.on('close', () => this.onClose());
         }
 
         onClose() {
 
-            let node = this;
-
-            node.server.removeListener('startup', node.startupListener);
-            node.server.removeListener('stateDigest', node.stateDigestListener);
-            node.server.removeListener('automationState', node.automationStateListener);
+            this.server.removeListener('startup', this.startupListener);
+            this.server.removeListener('stateDigest', this.stateDigestListener);
+            this.server.removeListener('automationState', this.automationStateListener);
         }
 
         writeToContext(state) {
 
-            let node = this;
-
-            if(node.config.toContext) {
-                let type = (node.config.context === 'flow') ? 'flow' : 'global';
-                let context = node.context()[type];
-                let contextKeyActivity = RED.util.parseContextStore(node.config.contextKeyActivity);
-                let contextKeyAutomation = RED.util.parseContextStore(node.config.contextKeyAutomation);
-                let contextKeyAutomationEvents = RED.util.parseContextStore(node.config.contextKeyAutomation + '_event');
-                let status = node.server.hub.activityStatus;
+            if(this.config.toContext) {
+                let type = (this.config.context === 'flow') ? 'flow' : 'global';
+                let context = this.context()[type];
+                let contextKeyActivity = RED.util.parseContextStore(this.config.contextKeyActivity);
+                let contextKeyAutomation = RED.util.parseContextStore(this.config.contextKeyAutomation);
+                let contextKeyAutomationEvents = RED.util.parseContextStore(this.config.contextKeyAutomation + '_event');
+                let status = this.server.hub.activityStatus;
                 if(status == 0 || status == 2 || status == 4) {
-                    context.set(contextKeyActivity.key, node.server.hub.activityId);
+                    context.set(contextKeyActivity.key, this.server.hub.activityId);
                 }
-                if(node.server.hub.automationState) {
-                    context.set(contextKeyAutomation.key, node.server.hub.automationState);
+                if(this.server.hub.automationState) {
+                    context.set(contextKeyAutomation.key, this.server.hub.automationState);
                 }
                 if(state) {
                     context.set(contextKeyAutomationEvents.key, state);

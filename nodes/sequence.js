@@ -1,21 +1,19 @@
+const NodeClass = require('../lib/nodeClass');
+
 module.exports = (RED) => {
 
-    class Node {
+    class Node extends NodeClass {
+
         constructor(config) {
+            super(config, RED);
+        }
 
-            let node = this;
+        init() {
 
-            RED.nodes.createNode(node, config);
+            this.on('input', msg => {
 
-            node.config = config;
-            node.server = RED.nodes.getNode(node.config.server);
-
-            if (!node.server) return;
-
-            node.on('input', msg => {
-
-                node.server.info(node, 'sequence input');
-                node.server.info(node, msg);
+                this.server.info(this, 'sequence input');
+                this.server.info(this, msg);
 
                 this.sequence();
             });
@@ -23,13 +21,12 @@ module.exports = (RED) => {
 
         sequence() {
 
-            let node = this;
-            let seq = node.config.sequence;
+            let seq = this.config.sequence;
             seq.push({
                 type: 'done'
             });
 
-            node.config.sequence.reduce((accu, value) => {
+            this.config.sequence.reduce((accu, value) => {
 
                 switch (value.type) {
 
@@ -39,28 +36,28 @@ module.exports = (RED) => {
 
                         return accu.then(() => new Promise((resolve, reject) => {
 
-                            let activityId = node.server.hub.activityId;
-                            let activityStatus = node.server.hub.activityStatus;
+                            let activityId = this.server.hub.activityId;
+                            let activityStatus = this.server.hub.activityStatus;
 
                             if(activityId == id && (activityStatus == 2 || activityStatus == 4)) {
-                                node.server.info(node, 'match');
+                                this.server.info(this, 'activity match');
                                 resolve();
                             }
 
                             let stateDigestListener = (digest) => {
                                 if(digest.activityId == id && digest.activityStatus == 2) {
-                                    node.server.info(node, 'digest');
-                                    node.server.removeListener('stateDigest', stateDigestListener);
+                                    this.server.info(this, 'digest');
+                                    this.server.removeListener('stateDigest', stateDigestListener);
                                     resolve();
                                 }
                             };
 
-                            node.server.on('stateDigest', stateDigestListener);
+                            this.server.on('stateDigest', stateDigestListener);
 
-                            node.server.hub.startActivity(id)
+                            this.server.hub.startActivity(id)
                                 .catch(err => reject(err));
                         }).catch(err =>
-                            node.send({
+                            this.send({
                                 payload: false
                             })
                         ));
@@ -69,17 +66,17 @@ module.exports = (RED) => {
                     case 'command':
                     {
                         let [id, command] = decodeURI(value.command).split(':');
-                        let action = node.server.hub.getAction(id, command);
+                        let action = this.server.hub.getAction(id, command);
 
                         return accu.then(() => new Promise((resolve, reject) =>
-                            node.server.hub.sendCommand(action, 0, 1, 0)
+                            this.server.hub.sendCommand(action, 0, 1, 0)
                                 .then(() => {
-                                    node.server.info(node, value.type);
+                                    this.server.info(this, value.type);
                                     resolve();
                                 })
                                 .catch(err => reject(err))
                         ).catch(err =>
-                            node.send({
+                            this.send({
                                 payload: false
                             })
                         ));
@@ -90,10 +87,10 @@ module.exports = (RED) => {
                         let delay = value.delay;
 
                         return accu.then(() => new Promise((resolve) => {
-                            node.server.info(node, value.type);
+                            this.server.info(this, value.type);
                             setTimeout(() => resolve(), delay);
                         }).catch(err =>
-                            node.send({
+                            this.send({
                                 payload: false
                             })
                         ));
@@ -102,12 +99,12 @@ module.exports = (RED) => {
                     case 'done':
                     {
                         return accu.then(() => new Promise((resolve) => {
-                            node.send({
+                            this.send({
                                 payload: true
                             });
                             resolve();
                         }).catch(err =>
-                            node.send({
+                            this.send({
                                 payload: false
                             })
                         ));

@@ -1,4 +1,3 @@
-const events = require('events');
 const getHub = require('../lib/getHub');
 
 module.exports = (RED) => {
@@ -7,64 +6,57 @@ module.exports = (RED) => {
 
         constructor(config) {
 
-            let node = this;
+            RED.nodes.createNode(this, config);
 
-            RED.nodes.createNode(node, config);
-            
-            node.config = config;
-            node.events = new events.EventEmitter();
-            node.debug = config.debug;
-    
-            node.hub = getHub(RED, node.config.ip);
+            this.config = config;
+            this.debug = config.debug;
 
-            node.openListener = () => node.info(node, `HarmonyWS use (${node.config.ip} - ${node.config.name})`);
-            node.closeListener = () => node.reconnect();
-            node.stateDigestListener = (digest) => node.emit('stateDigest', digest);
-            node.automationStateListener = (state) => node.emit('automationState', state);
+            this.hub = getHub(RED, this.config.ip);
 
-            node.hub.on('open', node.openListener);
-            node.hub.on('close', node.closeListener);
-            node.hub.on('stateDigest', node.stateDigestListener);
-            node.hub.on('automationState', node.automationStateListener);
-   
-            node.hub.getConfig()
+            this.openListener = () => this.info(this, `HarmonyWS use (${this.config.ip} - ${this.config.name})`);
+            this.closeListener = () => this.reconnect();
+            this.stateDigestListener = (digest) => this.emit('stateDigest', digest);
+            this.automationStateListener = (state) => this.emit('automationState', state);
+
+            this.hub.on('open', this.openListener);
+            this.hub.on('close', this.closeListener);
+            this.hub.on('stateDigest', this.stateDigestListener);
+            this.hub.on('automationState', this.automationStateListener);
+
+            this.hub.getConfig()
                 .then(() => {
-                    node.info(node, 'startup');
-                    node.emit('startup');
+                    this.info(this, 'startup');
+                    this.emit('startup');
                 })
                 .catch(err => {
-                    node.error(node, err.message);
+                    this.error(this, err.message);
                 });
 
-            node.reconnectInterval = () => setInterval(() => node.reconnect() , 60000);
-     
-            node.on('close', () => node.onClose());
+            this.reconnectInterval = () => setInterval(() => this.reconnect() , 60000);
+
+            this.on('close', () => this.onClose());
         }
 
         reconnect() {
 
-            let node = this;
-
-            if (!node.hub.isConnected()) {
-                node.info(node, 'reloadConfig');
-                node.hub.reloadConfig()
+            if (!this.hub.isConnected()) {
+                this.info(this, 'reloadConfig');
+                this.hub.reloadConfig()
                     .catch(err => {
-                        node.error(node, err.message);
+                        this.error(this, err.message);
                     });
             }
         }
 
         onClose() {
 
-            let node = this;
+            if (this.hub) {
+                this.hub.removeListener('open', this.openListener);
+                this.hub.removeListener('close', this.closeListener);
+                this.hub.removeListener('stateDigest', this.stateDigestListener);
+                this.hub.removeListener('automationState', this.automationStateListener);
 
-            if (node.hub) {
-                node.hub.removeListener('open', node.openListener);
-                node.hub.removeListener('close', node.closeListener);
-                node.hub.removeListener('stateDigest', node.stateDigestListener);
-                node.hub.removeListener('automationState', node.automationStateListener);
-
-                clearInterval(node.reconnectInterval);
+                clearInterval(this.reconnectInterval);
             }
         }
 
@@ -84,7 +76,6 @@ module.exports = (RED) => {
                 maxLength: 1000
             });
             RED.comms.publish('debug', data);
-
         }
 
         info(source, msg) {
@@ -96,7 +87,6 @@ module.exports = (RED) => {
         error(source, msg) {
 
             this.sendDebug('error', source, msg);
-            // if (this.debug) RED.log.error(msg);
         }
     }
 
