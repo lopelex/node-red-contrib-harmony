@@ -42,6 +42,7 @@ module.exports = (RED) => {
                             if(activityId == id && (activityStatus == 2 || activityStatus == 4)) {
                                 this.server.info(this, 'activity match');
                                 resolve();
+                                return;
                             }
 
                             let stateDigestListener = (digest) => {
@@ -58,7 +59,8 @@ module.exports = (RED) => {
                                 .catch(err => reject(err));
                         }).catch(err =>
                             this.send({
-                                payload: false
+                                payload: false,
+                                error: err
                             })
                         ));
                     }
@@ -77,7 +79,8 @@ module.exports = (RED) => {
                                 .catch(err => reject(err))
                         ).catch(err =>
                             this.send({
-                                payload: false
+                                payload: false,
+                                error: err
                             })
                         ));
                     }
@@ -91,7 +94,8 @@ module.exports = (RED) => {
                             setTimeout(() => resolve(), delay);
                         }).catch(err =>
                             this.send({
-                                payload: false
+                                payload: false,
+                                error: err
                             })
                         ));
                     }
@@ -105,7 +109,8 @@ module.exports = (RED) => {
                             resolve();
                         }).catch(err =>
                             this.send({
-                                payload: false
+                                payload: false,
+                                error: err
                             })
                         ));
                     }

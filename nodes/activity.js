@@ -24,7 +24,7 @@ module.exports = (RED) => {
                 else if (msg.activity) {
                     id = msg.activity;
                 }
-                else if (!this.toBoolean(msg.payload, true)) {
+                else if (!toBoolean(msg.payload, true)) {
                     id = '-1'; //poweroff
                 }
 
