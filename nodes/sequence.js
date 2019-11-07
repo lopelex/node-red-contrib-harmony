@@ -33,6 +33,39 @@ module.exports = (RED) => {
 
                 switch (value.type) {
 
+                    case 'activity':
+                    {
+                        let id = value.activity;
+
+                        return accu.then(() => new Promise((resolve, reject) => {
+
+                            let activityId = node.server.hub.activityId;
+                            let activityStatus = node.server.hub.activityStatus;
+
+                            if(activityId == id && (activityStatus == 2 || activityStatus == 4)) {
+                                node.server.info(node, 'match');
+                                resolve();
+                            }
+
+                            let stateDigestListener = (digest) => {
+                                if(digest.activityId == id && digest.activityStatus == 2) {
+                                    node.server.info(node, 'digest');
+                                    node.server.removeListener('stateDigest', stateDigestListener);
+                                    resolve();
+                                }
+                            };
+
+                            node.server.on('stateDigest', stateDigestListener);
+
+                            node.server.hub.startActivity(id)
+                                .catch(err => reject(err));
+                        }).catch(err =>
+                            node.send({
+                                payload: false
+                            })
+                        ));
+                    }
+
                     case 'command':
                     {
                         let [id, command] = decodeURI(value.command).split(':');
@@ -41,12 +74,14 @@ module.exports = (RED) => {
                         return accu.then(() => new Promise((resolve, reject) =>
                             node.server.hub.sendCommand(action, 0, 1, 0)
                                 .then(() => {
-                                    node.send({
-                                        payload: action
-                                    });
+                                    node.server.info(node, value.type);
                                     resolve();
                                 })
                                 .catch(err => reject(err))
+                        ).catch(err =>
+                            node.send({
+                                payload: false
+                            })
                         ));
                     }
 
@@ -55,27 +90,35 @@ module.exports = (RED) => {
                         let delay = value.delay;
 
                         return accu.then(() => new Promise((resolve) => {
-                            node.send({
-                                payload: 'delay: ' + delay
-                            });
+                            node.server.info(node, value.type);
                             setTimeout(() => resolve(), delay);
-                        }));
+                        }).catch(err =>
+                            node.send({
+                                payload: false
+                            })
+                        ));
                     }
 
                     case 'done':
                     {
                         return accu.then(() => new Promise((resolve) => {
                             node.send({
-                                payload: 'done'
+                                payload: true
                             });
                             resolve();
-                        }));
+                        }).catch(err =>
+                            node.send({
+                                payload: false
+                            })
+                        ));
                     }
                     default:
                         return false;
                 }
             }
             , Promise.resolve());
+
+            seq.pop();
         }
     }
 

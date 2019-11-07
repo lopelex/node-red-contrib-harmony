@@ -24,7 +24,7 @@ module.exports = (RED) => {
                 node.writeToContext();
             });
 
-            node.server.on('startup', () => {
+            node.startupListener = (state) => {
                 if(node.config.startup) {
                     node.send({
                         payload: {
@@ -38,9 +38,9 @@ module.exports = (RED) => {
                     });
                     node.writeToContext();
                 }
-            }); 
-    
-            node.server.on('stateDigest', (digest) => {
+            };
+
+            node.stateDigestListener = (digest) => {
                 node.send({
                     payload: {
                         activity: digest.activityId,
@@ -50,9 +50,9 @@ module.exports = (RED) => {
                     status: digest.activityStatus
                 });
                 node.writeToContext();
-            });
+            };
 
-            node.server.on('automationState', (state) => {
+            node.automationStateListener = (state) => {
                 node.send({
                     payload: {
                         automationState: state
@@ -60,7 +60,22 @@ module.exports = (RED) => {
                     automationState: state
                 });
                 node.writeToContext(state);
-            });  
+            };
+
+            node.server.on('startup', node.startupListener);
+            node.server.on('stateDigest', node.stateDigestListener);
+            node.server.on('automationState', node.automationStateListener);
+
+            node.on('close', () => node.onClose());
+        }
+
+        onClose() {
+
+            let node = this;
+
+            node.server.removeListener('startup', node.startupListener);
+            node.server.removeListener('stateDigest', node.stateDigestListener);
+            node.server.removeListener('automationState', node.automationStateListener);
         }
 
         writeToContext(state) {

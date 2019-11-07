@@ -59,10 +59,10 @@ module.exports = (RED) => {
             let node = this;
 
             if (node.hub) {
-                node.hub.off('open', node.openListener);
-                node.hub.off('close', node.closeListener);
-                node.hub.off('stateDigest', node.stateDigestListener);
-                node.hub.off('automationState', node.automationStateListener);
+                node.hub.removeListener('open', node.openListener);
+                node.hub.removeListener('close', node.closeListener);
+                node.hub.removeListener('stateDigest', node.stateDigestListener);
+                node.hub.removeListener('automationState', node.automationStateListener);
 
                 clearInterval(node.reconnectInterval);
             }

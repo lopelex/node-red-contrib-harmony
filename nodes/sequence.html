@@ -58,6 +58,10 @@
                     }).appendTo(row1);
 
                     var options = [{
+                            type: 'activity',
+                            text: 'Activity'
+                        },
+                        {
                             type: 'command',
                             text: 'Command'
                         },
@@ -86,8 +90,14 @@
 
                         switch ($(this).val()) {
 
+                            case 'activity':
+                                createActivityField(opt);
+                                updateList();
+                                break;
+
                             case 'command':
                                 createCommandField(opt);
+                                updateList();
                                 break;
 
                             case 'delay':
@@ -99,7 +109,27 @@
 
                     select.val(opt.type).change();
 
-                    updateList();
+                    function createActivityField(opt) {
+
+                        row2.empty();
+
+                        var block = $('<div/>', {
+                            style: 'margin-top:4px; clear:both;'
+                        }).appendTo(row2);
+
+                        $('<div/>', {
+                                style: 'display:inline-block; text-align:right; width:120px; padding-right:10px; box-sizing:border-box;'
+                            })
+                            .text('Activity')
+                            .appendTo(block);
+
+                        var activity = $('<select/>', {
+                                class: 'node-input-sequence-activity',
+                                style: 'width: 250px;'
+                            })
+                            .attr('init', opt.activity)
+                            .appendTo(block);
+                    }
 
                     function createCommandField(opt) {
 
@@ -157,6 +187,7 @@
                         var delay = $('<input/>', {
                                 class: 'node-input-sequence-delay',
                                 type: 'text',
+                                value: 1000,
                                 style: 'width: 250px;'
                             })
                             .attr('init', opt.delay)
@@ -196,35 +227,58 @@
 
                     switch (type) {
 
-                        case 'command':
+                        case 'activity':
+                            {
+                                var activity = $(this).find('.node-input-sequence-activity');
 
-                            var activity = $(this).find('.node-input-sequence-activity');
-                            var command = $(this).find('.node-input-sequence-command');
-                            activity.off('change');
-                            if(useInit) {
-                                updateCommandField(activity, activity.attr('init'), command, command.attr('init'));
+                                if (useInit) {
+                                    updateActivityField(activity, activity.attr('init'));
+                                } else {
+                                    updateActivityField(activity, activity.val());
+                                }
                             }
-                            else {
-                                updateCommandField(activity, activity.val(), command, command.val());
+                            break;
+
+                        case 'command':
+                            {
+                                var activity = $(this).find('.node-input-sequence-activity');
+                                var command = $(this).find('.node-input-sequence-command');
+                                activity.off('change');
+                                if (useInit) {
+                                    updateCommandField(activity, activity.attr('init'), command, command.attr('init'));
+                                } else {
+                                    updateCommandField(activity, activity.val(), command, command.val());
+                                }
+                                activity.on('change', function() {
+                                    updateList();
+                                });
                             }
-                            activity.on('change', function() {
-                                updateList();
-                            });
                             break;
 
                         case 'delay':
-
-                            var delay = $(this).find('.node-input-sequence-delay');
-                            if(useInit) {
-                                updateDelayField(delay, delay.attr('init'));
-                            }
-                            else {
-                                updateDelayField(delay, delay.val());
+                            {
+                                var delay = $(this).find('.node-input-sequence-delay');
+                                if (useInit) {
+                                    updateDelayField(delay, delay.attr('init'));
+                                } else {
+                                    updateDelayField(delay, delay.val());
+                                }
                             }
                             break;
                         default:
                     }
                 });
+            }
+
+            function updateActivityField(activity, value) {
+                activity.empty();
+                $.each(node.data, function(index, value) {
+                    if (value.type === 'activity') {
+                        activity.append($('<option/>').val(value.id).text(value.label + ' (' + value.id + ')'));
+                    }
+                });
+
+                activity.val(value);
             }
 
             function updateCommandField(activity, valueA, command, valueC) {
@@ -242,7 +296,7 @@
                     return obj.id === valueA;
                 }).pop();
 
-                if(act && act.commands && act.commands.length > 0) {
+                if (act && act.commands && act.commands.length > 0) {
                     $.each(act.commands, function(index, value) {
                         var cmd = JSON.parse(value.action);
                         var action = encodeURI(cmd.deviceId + ':' + cmd.command);
