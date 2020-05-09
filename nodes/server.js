@@ -71,10 +71,14 @@ module.exports = (RED) => {
                 msg: msg,
                 _path: ''
             };
-            data = RED.util.encodeObject(data, {
-                maxLength: 1000
-            });
-            RED.comms.publish('debug', data);
+            try {
+                data = RED.util.encodeObject(data, {
+                    maxLength: 1000
+                });
+                RED.comms.publish('debug', data);                
+            } catch (e) {
+                //
+            }
         }
 
         info(source, msg) {

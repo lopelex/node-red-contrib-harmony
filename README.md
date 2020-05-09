@@ -76,9 +76,9 @@ A Harmony **Hub** needs to be selected from the list or created by clicking on t
 **IP** address can be autodetected by clicking on the search button in the configuration node.
 
 When an **Activity** is switched on the Harmony Hub, the node sends an object with a payload to the output:
-`payload: { activityId: activityId, activityStatus: activityStatus }`
+`payload: { activity: activityId, status: activityStatus }`
 The *activityId* is the ID of the current activity, the *activityStatus* represents the following states:
-0 = Hub is off, 1 = Activity is starting, 2 = Activity is started, 3 = Hub is turning off.
+0 = Hub is off, 1 = Activity is starting, 2 = Activity is started, 3 = Hub is turning off, 4 = Activity is started but value is cached.
 
 ## Built With
 
