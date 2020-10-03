@@ -4,15 +4,10 @@
     "description": "Harmony Hub Websocket Integration for Node-RED",
     "license": "MIT",
     "dependencies": {
-        "npm": "^6.9.0",
-        "harmony-websocket": "^1.5.2",
-        "is-port-reachable": "^2.0.1",
+        "harmony-websocket": "^1.5.3",
+        "is-port-reachable": "^3.0.0",
         "node-ssdp": "^4.0.0",
-        "node-upnp": "^1.1.1",
-        "request": "^2.65.0",
-        "request-promise": "^4.2.4",
-        "websocket": "^1.0.28",
-        "websocket-as-promised": "^0.9.0"
+        "node-upnp": "^1.2.0"
     },
     "repository": {
         "type": "git",
@@ -45,8 +40,8 @@
         "chai": "*",
         "jshint": "*",
         "mocha": "*",
-        "sinon": "^6.1.5",
-        "eslint": "^6.6.0"
+        "sinon": "*",
+        "eslint": "*"
     },
     "bugs": {
         "url": "https://github.com/lopelex/node-red-contrib-harmony/issues"
