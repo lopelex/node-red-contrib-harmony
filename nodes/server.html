@@ -44,7 +44,7 @@
                 $('#node-config-input-select-trigger').addClass('disabled')
                 $('#node-config-input-ip-select').attr('disabled', 'disabled')
                 $('#node-config-input-ip-select').append("<option value='' selected>Scanning for hubs...</option>")
-                $.get('/hws/discover')
+                $.get('hws/discover')
                     .done(function(data) {
                         var hubs = JSON.parse(data);
                         $('#node-config-input-ip-select').empty()
