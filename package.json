@@ -4,7 +4,7 @@
     "description": "Harmony Hub Websocket Integration for Node-RED",
     "license": "MIT",
     "dependencies": {
-        "harmony-websocket": "^1.5.3",
+        "harmony-websocket": "^1.5.4",
         "is-port-reachable": "^3.0.0",
         "node-ssdp": "^4.0.0",
         "node-upnp": "^1.2.0"
